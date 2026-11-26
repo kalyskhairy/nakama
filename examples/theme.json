@@ -1,0 +1,87 @@
+{
+  "name": "contoh",
+  "background": {
+    "file": "background.png"
+  },
+  "charHeight": 0.088,
+  "characters": {
+    "captain": "sprites/captain",
+    "cook": "sprites/cook"
+  },
+  "agentTypes": {
+    "session": "captain",
+    "default": "captain"
+  },
+  "sessionCharacters": [
+    "captain",
+    "cook"
+  ],
+  "heights": {
+    "cook": 1.15
+  },
+  "nodes": {
+    "entrance": {
+      "x": 0.05,
+      "y": 0.5
+    },
+    "hall": {
+      "x": 0.5,
+      "y": 0.5
+    }
+  },
+  "edges": [
+    [
+      "entrance",
+      "hall"
+    ]
+  ],
+  "entrance": "entrance",
+  "stations": [
+    {
+      "id": "kitchen",
+      "x": 0.3,
+      "y": 0.3,
+      "kind": "work",
+      "room": "kitchen",
+      "node": "hall",
+      "for": [
+        "cook"
+      ]
+    },
+    {
+      "id": "desk",
+      "x": 0.6,
+      "y": 0.3,
+      "kind": "work",
+      "room": "office",
+      "node": "hall"
+    },
+    {
+      "id": "helm",
+      "x": 0.85,
+      "y": 0.5,
+      "kind": "work",
+      "room": "deck",
+      "node": "hall",
+      "for": [
+        "captain"
+      ]
+    },
+    {
+      "id": "bed-1",
+      "x": 0.3,
+      "y": 0.8,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "hall"
+    },
+    {
+      "id": "bed-2",
+      "x": 0.4,
+      "y": 0.8,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "hall"
+    }
+  ]
+}
