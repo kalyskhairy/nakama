@@ -85,7 +85,7 @@ func TestFetchExpiredTokenIsNotSent(t *testing.T) {
 	srv := server(t, 200, 0, &hits)
 	dir := account(t, t.TempDir(), ".claude", t0.Add(-time.Hour))
 	u := Fetch(context.Background(), srv.Client(), srv.URL, dir, t0)
-	if hits.Load() != 0 || !strings.Contains(u.Err, "token kedaluwarsa") {
+	if hits.Load() != 0 || !strings.Contains(u.Err, "token expired") {
 		t.Fatalf("hits=%d %+v", hits.Load(), u)
 	}
 }
@@ -116,7 +116,7 @@ func TestFetchMissingCredentials(t *testing.T) {
 	srv := server(t, 200, 0, nil)
 	dir := filepath.Join(t.TempDir(), ".claude")
 	os.MkdirAll(dir, 0o755)
-	if u := Fetch(context.Background(), srv.Client(), srv.URL, dir, t0); !strings.Contains(u.Err, "tidak ada kredensial") {
+	if u := Fetch(context.Background(), srv.Client(), srv.URL, dir, t0); !strings.Contains(u.Err, "no credentials") {
 		t.Fatalf("%+v", u)
 	}
 }

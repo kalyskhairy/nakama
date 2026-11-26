@@ -22,18 +22,18 @@ func runTheme(args []string) error {
 		return runPreview(args[1:])
 	}
 	if len(args) == 0 || args[0] != "import-sheet" {
-		return fmt.Errorf("pemakaian: nakama theme import-sheet --sheet <png> --theme <dir> --name <karakter> [--height 64]\n        nakama theme preview --theme <dir> [--out preview.png]")
+		return fmt.Errorf("usage: nakama theme import-sheet --sheet <png> --theme <dir> --name <character> [--height 64]\n       nakama theme preview --theme <dir> [--out preview.png]")
 	}
 	fs := flag.NewFlagSet("import-sheet", flag.ContinueOnError)
-	sheet := fs.String("sheet", "", "lembar sprite (PNG, latar magenta, 6 baris)")
-	theme := fs.String("theme", "", "direktori tema tujuan")
-	name := fs.String("name", "", "nama karakter")
-	height := fs.Int("height", 64, "tinggi frame jalan (piksel)")
+	sheet := fs.String("sheet", "", "sprite sheet (PNG, magenta background, 6 rows)")
+	theme := fs.String("theme", "", "theme folder to write to")
+	name := fs.String("name", "", "character name")
+	height := fs.Int("height", 64, "height of a walking frame (pixels)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
 	if *sheet == "" || *theme == "" || *name == "" {
-		return fmt.Errorf("--sheet, --theme, dan --name wajib diisi")
+		return fmt.Errorf("--sheet, --theme and --name are required")
 	}
 	f, err := os.Open(*sheet)
 	if err != nil {
@@ -42,7 +42,7 @@ func runTheme(args []string) error {
 	defer f.Close()
 	im, err := png.Decode(f)
 	if err != nil {
-		return fmt.Errorf("%s bukan PNG yang valid: %w", *sheet, err)
+		return fmt.Errorf("%s is not a valid PNG: %w", *sheet, err)
 	}
 	s, err := sprites.Slice(im, *height)
 	if err != nil {
@@ -52,7 +52,7 @@ func runTheme(args []string) error {
 	if err := s.Save(out); err != nil {
 		return err
 	}
-	fmt.Printf("%d frame disimpan di %s\n", len(s.Rows[0])+len(s.Rows[1])+len(s.Rows[2])+len(s.Rows[3])+len(s.Rows[4])+len(s.Rows[5]), out)
+	fmt.Printf("%d frames saved in %s\n", len(s.Rows[0])+len(s.Rows[1])+len(s.Rows[2])+len(s.Rows[3])+len(s.Rows[4])+len(s.Rows[5]), out)
 	return nil
 }
 
@@ -76,13 +76,13 @@ func cross(im *image.NRGBA, x, y, arm int, c color.NRGBA) {
 // graph (cyan lines, white nodes) and the stations (green = work, blue = rest) on top.
 func runPreview(args []string) error {
 	fs := flag.NewFlagSet("preview", flag.ContinueOnError)
-	dir := fs.String("theme", "", "direktori tema")
-	out := fs.String("out", "preview.png", "berkas keluaran")
+	dir := fs.String("theme", "", "theme folder")
+	out := fs.String("out", "preview.png", "output file")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *dir == "" {
-		return fmt.Errorf("--theme wajib diisi")
+		return fmt.Errorf("--theme is required")
 	}
 	th, err := theme.Load(*dir)
 	if err != nil {

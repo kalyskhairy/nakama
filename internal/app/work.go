@@ -90,9 +90,9 @@ func (m *Model) cycleAccount(now time.Time) {
 	}
 	m.account = next
 	if next == "" {
-		next = "semua"
+		next = "all"
 	}
-	m.say(now, "akun di pohon: %s", next)
+	m.say(now, "accounts in the tree: %s", next)
 }
 
 func (m *Model) entry(now time.Time, id string) (index.Entry, bool) {
@@ -124,7 +124,7 @@ func (m *Model) enter(now time.Time) {
 			}
 		}
 	case workspace.Claimed:
-		m.say(now, "sesi ini sedang dipakai di terminal lain; hanya bisa dilihat")
+		m.say(now, "this session is in use in another terminal; view only")
 	case workspace.Recent:
 		if m.confirmID == id && now.Sub(m.confirmAt) <= confirmTTL {
 			m.confirmID = ""
@@ -132,7 +132,7 @@ func (m *Model) enter(now time.Time) {
 			return
 		}
 		m.confirmID, m.confirmAt = id, now
-		m.say(now, "sesi ini baru berubah beberapa detik lalu; tekan Enter lagi untuk resume")
+		m.say(now, "this session changed seconds ago; press Enter again to resume it")
 	case workspace.Resume:
 		m.resume(e, now)
 	}
@@ -141,10 +141,10 @@ func (m *Model) enter(now time.Time) {
 func (m *Model) resume(e index.Entry, now time.Time) {
 	switch {
 	case e.Cwd == "":
-		m.say(now, "folder sesi ini tidak diketahui; tidak bisa di-resume")
+		m.say(now, "the folder of this session is unknown; it cannot be resumed")
 		return
 	case !m.statDir(e.Cwd):
-		m.say(now, "folder tidak ada di sistem ini: %s", e.Cwd)
+		m.say(now, "no such folder on this system: %s", e.Cwd)
 		return
 	}
 	if old := m.ownedAll()[e.ID]; old != nil { // the dead PTY of this very session
@@ -170,12 +170,12 @@ func expandHome(p string) string {
 func (m *Model) startNew(dir, account string, now time.Time) {
 	dir = filepath.Clean(expandHome(dir)) // the folder key must equal the cwd Claude records
 	if !m.statDir(dir) {
-		m.say(now, "folder tidak ada: %s", dir)
+		m.say(now, "no such folder: %s", dir)
 		return
 	}
 	m.prefs.Set(dir, true)
 	if err := m.prefs.Save(); err != nil {
-		m.say(now, "gagal menyimpan pilihan folder: %v", err)
+		m.say(now, "could not save the folder choice: %v", err)
 	}
 	m.newSession(SpawnReq{Dir: dir, ConfigDir: m.accounts[account]}, now)
 }
@@ -416,7 +416,7 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 		if s := m.shown(now); s != nil && !s.Exited() {
 			m.enterChat(s)
 		} else {
-			m.say(now, "tidak ada chat terbuka: pilih sesi lalu Enter")
+			m.say(now, "no chat open: pick a session, then Enter")
 		}
 	case "tab":
 		if m.pane == workspace.PaneActive {
@@ -439,7 +439,7 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 			m.zoom = true
 			m.enterChat(s)
 		} else {
-			m.say(now, "buka sesi dulu (Enter), baru perbesar")
+			m.say(now, "open a session first (Enter), then zoom")
 		}
 	case "a":
 		m.cycleAccount(now)
@@ -452,7 +452,7 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 			m.detailID = id
 			m.openOverlay(ovDetail)
 		} else {
-			m.say(now, "pilih sesi dulu")
+			m.say(now, "pick a session first")
 		}
 	case "v":
 		switch {
@@ -460,18 +460,18 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 			m.mode = input.Home
 			_, m.inOffice = m.officeLayout(m.w, m.h)
 		case m.office != nil && m.office.Reason != "":
-			m.say(now, "kantor tidak aktif: %s", m.office.Reason)
+			m.say(now, "office unavailable: %s", m.office.Reason)
 		default:
-			m.say(now, "kantor tidak aktif: tidak ada tema (--theme)")
+			m.say(now, "office unavailable: no theme (--theme)")
 		}
 	case "x":
 		id := m.selectedID(now)
 		s := m.ownedAll()[id]
 		switch {
 		case s == nil:
-			m.say(now, "hanya sesi yang dibuka nakama yang bisa ditutup di sini")
+			m.say(now, "only sessions opened by nakama can be closed here")
 		case !s.Exited():
-			m.say(now, "sesi masih berjalan; akhiri dari dalam sesi")
+			m.say(now, "the session is still running; end it from inside")
 		default:
 			for i, t := range m.sessions {
 				if t == s {
@@ -483,9 +483,9 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 	case "m":
 		m.mouseOn = !m.mouseOn
 		if m.mouseOn {
-			m.say(now, "mouse aktif")
+			m.say(now, "mouse on")
 		} else {
-			m.say(now, "mouse mati: drag biasa menyalin teks")
+			m.say(now, "mouse off: a plain drag copies text")
 		}
 	case "q":
 		m.quit(now)
@@ -577,7 +577,7 @@ func (m *Model) homeEvent(ev input.Event, now time.Time) {
 			m.inOffice, m.zoom = false, true
 			m.enterChat(s)
 		} else {
-			m.say(now, "buka sesi dulu (Enter), baru perbesar")
+			m.say(now, "open a session first (Enter), then zoom")
 		}
 	case "v", "esc":
 		m.mode, m.inOffice = input.Work, false
@@ -625,7 +625,7 @@ func (m *Model) overlayEvent(ev input.Event, now time.Time) {
 			if m.filter.Saved() {
 				m.filter.Apply(m.prefs)
 				if err := m.prefs.Save(); err != nil {
-					m.say(now, "gagal menyimpan pilihan folder: %v", err)
+					m.say(now, "could not save the folder choice: %v", err)
 				}
 			}
 			m.closeOverlay(now)

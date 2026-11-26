@@ -132,7 +132,7 @@ func TestActivityRecordsToolsPromptsAndReplies(t *testing.T) {
 		asst("m1", t0, tr.Usage{}),
 	)
 	got := tk.Activity()
-	if len(got) != 3 || got[0].Text != "balasan" || got[1].Text != "alat: Read" || got[2].Text != "prompt pengguna" {
+	if len(got) != 3 || got[0].Text != "reply" || got[1].Text != "tool: Read" || got[2].Text != "user prompt" {
 		t.Fatalf("%+v", got)
 	}
 }
@@ -150,7 +150,7 @@ func TestActivityKeepsLast50(t *testing.T) {
 		evs = append(evs, use(fmt.Sprintf("t%d", i), fmt.Sprintf("Tool%d", i)))
 	}
 	got := tracker(evs...).Activity()
-	if len(got) != 50 || got[0].Text != "alat: Tool59" || got[49].Text != "alat: Tool10" {
+	if len(got) != 50 || got[0].Text != "tool: Tool59" || got[49].Text != "tool: Tool10" {
 		t.Fatalf("len %d first %q last %q", len(got), got[0].Text, got[len(got)-1].Text)
 	}
 }

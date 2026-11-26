@@ -14,7 +14,7 @@ import (
 func HelpLines(width int) []string {
 	var raw []string
 	add := func(s ...string) { raw = append(raw, s...) }
-	add("nakama — bantuan   (esc, q atau F1 menutup, ↑/↓ menggulir)", "")
+	add("nakama — help   (esc, q or F1 closes, ↑/↓ scroll)", "")
 	last := ""
 	for _, b := range input.Bindings {
 		if b.Context != last {
@@ -23,36 +23,36 @@ func HelpLines(width int) []string {
 		}
 		add(fmt.Sprintf("  %-16s %s", b.Keys, b.Desc))
 	}
-	add("", "Arti tanda",
-		"  ?  menunggu izin atau jawabanmu     ●  bekerja     ◐  aktif     ○  diam     ✓  selesai",
-		"  Di kantor, karakter gelap kebiruan adalah subagen; yang berwarna penuh adalah sesi chat.",
-		"  (terminal lain)  sesi sedang dipakai di terminal lain: hanya bisa dilihat, tidak di-resume",
-		"  baru saja aktif  transkrip berubah beberapa detik lalu tanpa proses yang dikenal: Enter meminta konfirmasi",
+	add("", "Marks",
+		"  ?  needs your approval or answer     ●  working     ◐  active     ○  idle     ✓  done",
+		"  In the office, dim blue characters are subagents; full colour ones are chat sessions.",
+		"  (other terminal)  the session is in use elsewhere: view only, never resumed",
+		"  just active  the transcript changed seconds ago with no known process: Enter asks to confirm",
 		"",
-		"Bar status",
-		"  ! N menunggu  jumlah agen (termasuk subagen) yang menunggu kamu — paling penting, dipotong terakhir",
-		"  5j / 7h       pemakaian batas rencana 5 jam dan 7 hari, dengan jam reset; per akun bila lebih dari satu",
-		"  tok           token aktif hari ini: hanya sesi di panel Aktif atau yang dibuka nakama",
+		"Status bar",
+		"  ! N waiting  agents (subagents too) waiting for you — most important, cut last",
+		"  5h / 7h       plan usage over 5 hours and 7 days, with reset times; per account if more than one",
+		"  tok           tokens today of the sessions in Active or opened by nakama",
 		"",
-		"Cara kerja",
-		"  Semua sesi Claude Code di laptop ini dibaca dari ~/.claude*/projects, dikelompokkan per folder.",
-		"  Folder yang ditampilkan dipilih dengan f; folder baru tersembunyi sampai kamu memilihnya.",
-		"  Sesi yang menunggu atau berjalan tetap muncul di panel Aktif walau foldernya disembunyikan.",
-		"  Enter pada sesi lama menjalankan `claude --resume` di folder dan akun aslinya. Sesi yang dipakai",
-		"  terminal lain tidak di-resume agar dua proses tidak menulis ke satu transkrip.",
-		"  Akun: ~/.claude adalah personal, ~/.claude-work adalah work. Sesi baru memakai akun yang paling",
-		"  sering dipakai di folder itu; Tab di pemilih mengganti.",
+		"How it works",
+		"  Every Claude Code session on this machine is read from ~/.claude*/projects, grouped by folder.",
+		"  Choose the folders shown with f; new folders stay hidden until you do.",
+		"  Waiting and running sessions stay in Active even when their folder is hidden.",
+		"  Enter on an old session runs `claude --resume` in its own folder and account. A session used by",
+		"  another terminal is not resumed, so two processes never write one transcript.",
+		"  Accounts: ~/.claude is personal, ~/.claude-work is work. A new session uses the account most",
+		"  used in that folder; Tab in the picker changes it.",
 		"",
-		"Berkas dan flag",
-		"  ~/.config/nakama/folders.json  pilihan folder     ~/.config/nakama/themes/  tema kantor",
-		"  nakama --offline  tanpa panggilan jaringan (batas rencana tidak tampil)",
-		"  --prefix N  ganti tombol fokus (byte; bawaan 0 = Ctrl+Space)   --theme NAMA   --graphics auto|sixel|off",
-		"  --font LxT  ukuran sel terminal untuk kantor   --office-max-scale 1   --context-window 200000",
+		"Files and flags",
+		"  ~/.config/nakama/folders.json  folder choice     ~/.config/nakama/themes/  office themes",
+		"  nakama --offline  no network calls (plan limits are not shown)",
+		"  --prefix N  change the focus key (byte; default 0 = Ctrl+Space)   --theme NAME   --graphics auto|sixel|off",
+		"  --font WxH  terminal cell size for the office   --office-max-scale 1   --context-window 200000",
 		"",
 		"Tips",
-		"  Shift+drag menyalin teks saat mouse aktif; m mematikan mouse sama sekali.",
-		"  z memperbesar chat ke layar penuh; Ctrl+Space atau z kembali.",
-		"  Di dalam chat semua tombol (termasuk esc) milik Claude, kecuali Ctrl+Space dan F1.")
+		"  Shift+drag copies text while the mouse is on; m turns the mouse off.",
+		"  z zooms the chat to full screen; Ctrl+Space returns.",
+		"  Inside a chat every key (esc too) belongs to Claude, except Ctrl+Space and F1.")
 	var out []string
 	for _, l := range raw {
 		if l == "" {

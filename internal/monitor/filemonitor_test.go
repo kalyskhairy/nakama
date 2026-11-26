@@ -95,7 +95,7 @@ func TestFileMonitorActivity(t *testing.T) {
 	}
 	appendTo(t, filepath.Join(root, "-x", "a1.jsonl"), lines(t0, lnMode, lnAsst))
 	fm.Poll("a1", t0)
-	if got := fm.Activity("a1"); len(got) == 0 || got[0].Text != "alat: Bash" {
+	if got := fm.Activity("a1"); len(got) == 0 || got[0].Text != "tool: Bash" {
 		t.Fatalf("%+v", got)
 	}
 }

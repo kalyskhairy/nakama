@@ -51,7 +51,7 @@ func main() {
 
 	in, out := int(os.Stdin.Fd()), int(os.Stdout.Fd())
 	if !term.IsTerminal(in) || !term.IsTerminal(out) {
-		fmt.Fprintln(os.Stderr, "nakama butuh terminal interaktif")
+		fmt.Fprintln(os.Stderr, "nakama needs an interactive terminal")
 		os.Exit(1)
 	}
 	W, H, err := term.GetSize(out)

@@ -36,7 +36,7 @@ func NewRenderer(t *theme.Theme) (*Renderer, error) {
 	for name, dir := range t.Characters {
 		s, err := sprites.Load(dir)
 		if err != nil {
-			return nil, fmt.Errorf("karakter %q: %w", name, err)
+			return nil, fmt.Errorf("character %q: %w", name, err)
 		}
 		r.sheets[name] = s
 		for _, ri := range []int{0, 1, 2, 3} {

@@ -89,7 +89,7 @@ func TestLoadErrors(t *testing.T) {
 		{"crop outside image", "crop", func() string {
 			return write(t, func(m map[string]any) { m["background"].(map[string]any)["crop"] = []int{0, 0, 999, 80} })
 		}},
-		{"station coordinate out of range", "koordinat", func() string {
+		{"station coordinate out of range", "outside", func() string {
 			return write(t, func(m map[string]any) { m["stations"].([]any)[0].(map[string]any)["x"] = 1.2 })
 		}},
 		{"station with unknown node", "node", func() string {
@@ -98,19 +98,19 @@ func TestLoadErrors(t *testing.T) {
 		{"no default agent type", "default", func() string {
 			return write(t, func(m map[string]any) { m["agentTypes"] = map[string]any{"session": "captain"} })
 		}},
-		{"unknown character", "karakter", func() string {
+		{"unknown character", "character", func() string {
 			return write(t, func(m map[string]any) { m["agentTypes"].(map[string]any)["Explore"] = "ghost" })
 		}},
 		{"sprite dir missing", "sprite", func() string { return write(t, nil, "sprites") }},
-		{"graph not connected", "terhubung", func() string {
+		{"graph not connected", "not connected", func() string {
 			return write(t, func(m map[string]any) {
 				m["nodes"].(map[string]any)["c"] = map[string]any{"x": 0.5, "y": 0.9}
 			})
 		}},
-		{"no rest station", "stasiun", func() string {
+		{"no rest station", "station", func() string {
 			return write(t, func(m map[string]any) { m["stations"] = m["stations"].([]any)[:1] })
 		}},
-		{"no work station", "stasiun", func() string {
+		{"no work station", "station", func() string {
 			return write(t, func(m map[string]any) { m["stations"] = m["stations"].([]any)[1:] })
 		}},
 	}

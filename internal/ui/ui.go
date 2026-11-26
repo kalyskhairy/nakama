@@ -31,9 +31,9 @@ type Summary struct {
 	TokensToday int
 }
 
-const waitHint = "? = menunggu izin, atau alat lambat yang sudah disetujui"
+const waitHint = "? = needs approval, or a slow tool already approved"
 
-const hint = "F1 bantuan · Shift+drag salin"
+const hint = "F1 help · Shift+drag copy"
 
 func fit(s string, width int) string {
 	if width <= 0 {
@@ -63,9 +63,9 @@ func Glyph(s State) string {
 func formatTokens(n int) string {
 	switch {
 	case n >= 1_000_000:
-		return strings.Replace(fmt.Sprintf("%.1fM", float64(n)/1e6), ".", ",", 1) + " tok"
+		return fmt.Sprintf("%.1fM tok", float64(n)/1e6)
 	case n >= 1000:
-		return strings.Replace(fmt.Sprintf("%.1fK", float64(n)/1e3), ".", ",", 1) + " tok"
+		return fmt.Sprintf("%.1fK tok", float64(n)/1e3)
 	}
 	return fmt.Sprintf("%d tok", n)
 }
@@ -79,7 +79,7 @@ func limitFive(l LimitView, named bool) string {
 	if l.Err != "" {
 		return name + l.Err
 	}
-	five := fmt.Sprintf("%s5j %d%%", name, l.FivePct)
+	five := fmt.Sprintf("%s5h %d%%", name, l.FivePct)
 	if l.FiveReset != "" {
 		five += " (" + l.FiveReset + ")"
 	}
@@ -99,7 +99,7 @@ func limitSeven(l LimitView) string {
 func StatusLine(msg string, sum Summary, width int) string {
 	left := ""
 	if sum.Waiting > 0 {
-		left = fmt.Sprintf("! %d menunggu ", sum.Waiting)
+		left = fmt.Sprintf("! %d waiting ", sum.Waiting)
 	}
 
 	room := width - ansi.StringWidth(left)
@@ -137,7 +137,7 @@ func StatusLine(msg string, sum Summary, width int) string {
 	}
 	tokens := ""
 	if sum.TokensToday > 0 {
-		if tk := "aktif " + formatTokens(sum.TokensToday); take(tk) {
+		if tk := "active " + formatTokens(sum.TokensToday); take(tk) {
 			tokens = tk
 		}
 	}

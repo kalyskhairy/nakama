@@ -67,7 +67,7 @@ func TestLoadOfficeReasons(t *testing.T) {
 	}{
 		{"valid theme", func(o *officeOpts) { o.themeName = "good" }, yes, ""},
 		{"missing theme", func(o *officeOpts) { o.themeName = "nope" }, yes, "nope"},
-		{"graphics off", func(o *officeOpts) { o.themeName = "good"; o.graphics = "off" }, yes, "grafis"},
+		{"graphics off", func(o *officeOpts) { o.themeName = "good"; o.graphics = "off" }, yes, "graphics"},
 		{"auto without sixel", func(o *officeOpts) { o.themeName = "good"; o.graphics = "auto" }, no, "sixel"},
 		{"auto with sixel", func(o *officeOpts) { o.themeName = "good"; o.graphics = "auto" }, yes, ""},
 	}

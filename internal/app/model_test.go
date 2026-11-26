@@ -146,7 +146,7 @@ func TestEnterOnClaimedRefuses(t *testing.T) {
 	m.SetLive([]live.Proc{{PID: 99999, SessionID: "busy"}})
 	selectSession(m, "busy")
 	m.HandleEvent(key("enter"), t0)
-	if len(rs.reqs) != 0 || m.Mode() != input.Work || !strings.Contains(m.Message(t0), "terminal lain") {
+	if len(rs.reqs) != 0 || m.Mode() != input.Work || !strings.Contains(m.Message(t0), "another terminal") {
 		t.Fatalf("spawns %d mode %v msg %q", len(rs.reqs), m.Mode(), m.Message(t0))
 	}
 }
@@ -155,7 +155,7 @@ func TestEnterOnRecentNeedsSecondEnter(t *testing.T) {
 	m, rs, _ := workModel(t, []string{"/proj"}, ent("hot", "/proj", "J", 10*time.Second))
 	selectSession(m, "hot")
 	m.HandleEvent(key("enter"), t0)
-	if len(rs.reqs) != 0 || !strings.Contains(m.Message(t0), "Enter lagi") {
+	if len(rs.reqs) != 0 || !strings.Contains(m.Message(t0), "Enter again") {
 		t.Fatalf("first enter: spawns %d msg %q", len(rs.reqs), m.Message(t0))
 	}
 	m.HandleEvent(key("enter"), t0.Add(6*time.Second)) // the confirmation expired
@@ -479,7 +479,7 @@ func TestQuitAsksWhenSessionsAlive(t *testing.T) {
 	m.newSession(SpawnReq{Dir: "/p"}, t0)
 	m.HandleEvent(key("toggle"), t0)
 	m.HandleEvent(key("q"), t0)
-	if m.Quitting() || !strings.Contains(m.Message(t0), "q lagi") {
+	if m.Quitting() || !strings.Contains(m.Message(t0), "q again") {
 		t.Fatalf("first q: quitting %v msg %q", m.Quitting(), m.Message(t0))
 	}
 	m.HandleEvent(key("q"), t0.Add(time.Second))
@@ -494,7 +494,7 @@ func TestMaxNineSessions(t *testing.T) {
 		m.newSession(SpawnReq{Dir: "/p"}, t0)
 	}
 	m.newSession(SpawnReq{Dir: "/p"}, t0)
-	if len(m.Sessions()) != 9 || !strings.Contains(m.Message(t0), "maksimum 9") {
+	if len(m.Sessions()) != 9 || !strings.Contains(m.Message(t0), "at most 9") {
 		t.Fatalf("sessions %d msg %q", len(m.Sessions()), m.Message(t0))
 	}
 }
@@ -502,7 +502,7 @@ func TestMaxNineSessions(t *testing.T) {
 func TestSpawnErrorKeepsAppAlive(t *testing.T) {
 	m := newModel(t, func(SpawnReq, int, int) (*session.Session, error) { return nil, os.ErrNotExist })
 	m.newSession(SpawnReq{Dir: "/p"}, t0)
-	if len(m.Sessions()) != 0 || m.Mode() != input.Work || !strings.Contains(m.Message(t0), "gagal memulai") {
+	if len(m.Sessions()) != 0 || m.Mode() != input.Work || !strings.Contains(m.Message(t0), "could not start") {
 		t.Fatalf("sessions %d mode %v msg %q", len(m.Sessions()), m.Mode(), m.Message(t0))
 	}
 }
@@ -529,7 +529,7 @@ func TestCloseOnlyRemovesExited(t *testing.T) {
 	}
 	m.pane, m.activeKey = workspace.PaneActive, "run"
 	m.HandleEvent(key("x"), t0)
-	if len(m.Sessions()) != 1 || !strings.Contains(m.Message(t0), "masih berjalan") {
+	if len(m.Sessions()) != 1 || !strings.Contains(m.Message(t0), "still running") {
 		t.Fatalf("a running session must not be closed: %q", m.Message(t0))
 	}
 }
@@ -545,7 +545,7 @@ func TestFrameShowsLimits(t *testing.T) {
 	m := newModel(t, spawnCmd("sleep", "30"))
 	m.SetLimits([]limits.Usage{{Account: "personal", FiveHour: limits.Window{Pct: 78, ResetsAt: t0}, SevenDay: limits.Window{Pct: 39}}})
 	rows := plainRows(Frame(m, 120, 30, t0), 30)
-	if !strings.Contains(rows[29], "5j 78%") || !strings.Contains(rows[29], "7h 39%") {
+	if !strings.Contains(rows[29], "5h 78%") || !strings.Contains(rows[29], "7h 39%") {
 		t.Fatalf("%q", rows[29])
 	}
 	m.SetLimits([]limits.Usage{{Account: "personal", Err: "offline"}})

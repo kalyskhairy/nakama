@@ -45,7 +45,7 @@ func (m *Model) watchCrew(now time.Time) {
 		switch st {
 		case monitor.Waiting:
 			if !w.waiting {
-				say = "menunggu kamu"
+				say = "is waiting for you"
 			}
 			w.quietSince = time.Time{}
 		case monitor.Working:
@@ -55,7 +55,7 @@ func (m *Model) watchCrew(now time.Time) {
 				w.quietSince = now
 			}
 			if w.working && now.Sub(w.quietSince) >= finishedAfter {
-				w.working, say = false, "selesai bekerja"
+				w.working, say = false, "finished working"
 			}
 		}
 		w.waiting = st == monitor.Waiting

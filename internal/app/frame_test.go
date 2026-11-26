@@ -55,7 +55,7 @@ func TestFrameChatShowsSessionOutputAndStatusLine(t *testing.T) {
 	if !containsRow(rows[:24], "hello") {
 		t.Errorf("session output missing: %q", rows)
 	}
-	if !strings.Contains(rows[24], "F1 bantuan") {
+	if !strings.Contains(rows[24], "F1 help") {
 		t.Errorf("status line: %q", rows[24])
 	}
 }
@@ -63,7 +63,7 @@ func TestFrameChatShowsSessionOutputAndStatusLine(t *testing.T) {
 func TestFrameWorkEmptyShowsPanels(t *testing.T) {
 	m := newModel(t, spawnCmd("sleep", "30"))
 	rows := plainRows(Frame(m, 140, 40, t0), 40)
-	for _, want := range []string{"Aktif (0)", "Folder / Sesi", "Chat", "Enter membuka sesi terpilih"} {
+	for _, want := range []string{"Active (0)", "Folder / Session", "Chat", "Enter opens the selected session"} {
 		if !containsRow(rows, want) {
 			t.Errorf("no %q in %q", want, rows)
 		}
@@ -72,7 +72,7 @@ func TestFrameWorkEmptyShowsPanels(t *testing.T) {
 
 func TestFrameTooSmall(t *testing.T) {
 	m := newModel(t, spawnCmd("sleep", "30"))
-	if got := Frame(m, 30, 8, t0); !strings.Contains(ansi.Strip(got), "terminal terlalu kecil") {
+	if got := Frame(m, 30, 8, t0); !strings.Contains(ansi.Strip(got), "terminal too small") {
 		t.Errorf("got %q", got)
 	}
 	_ = Frame(m, 0, 0, t0) // must not panic
@@ -85,7 +85,7 @@ func TestFrameAfterResizeToTinyAndBack(t *testing.T) {
 		_ = Frame(m, sz[0], sz[1], t0) // must not panic
 	}
 	rows := plainRows(Frame(m, 100, 30, t0), 30)
-	if !strings.Contains(rows[29], "F1 bantuan") {
+	if !strings.Contains(rows[29], "F1 help") {
 		t.Errorf("status line after resize: %q", rows[29])
 	}
 }
@@ -122,12 +122,12 @@ func TestFrameWorkLayoutShowsPanelsStripAndStatus(t *testing.T) {
 	fm.info = map[string]monitor.Info{"a": {Status: monitor.Working, Model: "claude-opus-4", CtxPct: 41, PendingTool: "Read"}}
 	selectSession(m, "a")
 	rows := plainRows(Frame(m, 140, 40, t0), 40)
-	for _, want := range []string{"Aktif (1)", "Folder / Sesi", "Judul sesi", "opus-4 · bekerja · konteks 41%", "alat: Read", "Chat ──", "Enter membuka sesi terpilih"} {
+	for _, want := range []string{"Active (1)", "Folder / Session", "Judul sesi", "opus-4 · working · context 41%", "tool: Read", "Chat ──", "Enter opens the selected session"} {
 		if !containsRow(rows[:39], want) {
 			t.Errorf("no %q in %q", want, rows[:39])
 		}
 	}
-	if !strings.Contains(rows[39], "F1 bantuan") {
+	if !strings.Contains(rows[39], "F1 help") {
 		t.Errorf("status row: %q", rows[39])
 	}
 }
@@ -156,7 +156,7 @@ func TestZoomHidesTheLeftColumn(t *testing.T) {
 	m.HandleEvent(key("toggle"), t0)
 	m.HandleEvent(key("z"), t0)
 	rows := plainRows(Frame(m, 140, 40, t0), 40)
-	if containsRow(rows, "Aktif (") || containsRow(rows, "Folder / Sesi") || !strings.Contains(rows[0], "Chat ──") {
+	if containsRow(rows, "Active (") || containsRow(rows, "Folder / Session") || !strings.Contains(rows[0], "Chat ──") {
 		t.Fatalf("zoomed frame: %q", rows[:3])
 	}
 }
@@ -165,12 +165,12 @@ func TestNarrowTerminalShowsOnlyTheFocusedColumn(t *testing.T) {
 	m := chatModel(t, "sleep 30")
 	m.Resize(80, 25)
 	rows := plainRows(Frame(m, 80, 25, t0), 25)
-	if containsRow(rows, "Aktif (") || !strings.Contains(rows[0], "Chat ──") {
+	if containsRow(rows, "Active (") || !strings.Contains(rows[0], "Chat ──") {
 		t.Fatalf("chat focus on a narrow screen: %q", rows[:3])
 	}
 	m.HandleEvent(key("toggle"), t0)
 	rows = plainRows(Frame(m, 80, 25, t0), 25)
-	if !containsRow(rows, "Aktif (") || containsRow(rows, "Chat ──") {
+	if !containsRow(rows, "Active (") || containsRow(rows, "Chat ──") {
 		t.Fatalf("list focus on a narrow screen: %q", rows[:3])
 	}
 }
@@ -180,7 +180,7 @@ func TestOverlaysAreDrawnOverThePanels(t *testing.T) {
 	cases := []struct {
 		key  string
 		want []string
-	}{{"f1", []string{"Bantuan", "Daftar", "Tab"}}, {"f", []string{"Folder yang ditampilkan", "[x]"}}, {"n", []string{"Sesi baru", "Akun:"}}, {"d", []string{"Detail", "Judul"}}}
+	}{{"f1", []string{"Help", "Lists", "Tab"}}, {"f", []string{"Folders shown", "[x]"}}, {"n", []string{"New session", "Account:"}}, {"d", []string{"Detail", "Judul"}}}
 	for _, c := range cases {
 		m.mode, m.overlay = input.Work, ovNone
 		if c.key == "d" {

@@ -37,18 +37,18 @@ func loadOffice(o officeOpts, hasSixel func() bool) *app.OfficeConfig {
 		return &app.OfficeConfig{Reason: fmt.Sprintf(format, a...)}
 	}
 	if o.graphics == "off" {
-		return fail("grafis dimatikan (--graphics off)")
+		return fail("graphics turned off (--graphics off)")
 	}
 	th, err := theme.Load(filepath.Join(o.themesDir, o.themeName))
 	if err != nil {
-		return fail("tema %q: %v", o.themeName, err)
+		return fail("theme %q: %v", o.themeName, err)
 	}
 	if o.graphics != "sixel" && !hasSixel() {
-		return fail("terminal tidak mendukung sixel (paksa dengan --graphics sixel)")
+		return fail("the terminal does not support sixel (force it with --graphics sixel)")
 	}
 	r, err := office.NewRenderer(th)
 	if err != nil {
-		return fail("tema %q: %v", o.themeName, err)
+		return fail("theme %q: %v", o.themeName, err)
 	}
 	cw, ch, known := office.CellSize(o.fd, o.font)
 	return &app.OfficeConfig{Theme: th, Renderer: r, CellW: cw, CellH: ch, CellKnown: known, MaxScale: o.maxScale}

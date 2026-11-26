@@ -15,7 +15,7 @@ func testView() View {
 		Active: []ActiveRow{{ID: "a", Folder: "webshop", Title: "Judul yang sangat panjang sekali sampai melewati lebar panel", State: ui.StateWaiting}, {ID: "b", Folder: "nakama", Title: "Stage 3", State: ui.StateWorking, Claimed: true}},
 		Tree:   []TreeRow{{Folder: true, Cwd: "/a", Title: "nakama", Count: 2, Expanded: true}, {ID: "s1", Title: "Stage 3 office", State: ui.StateWorking, Account: "work"}},
 		Pane:   PaneTree, TreeSel: 1, NewFolders: 2,
-		Strip: [2]string{"Explore · opus · bekerja", "alat: Read"}, ChatPlaceholder: "Enter untuk membuka",
+		Strip: [2]string{"Explore · opus · working", "tool: Read"}, ChatPlaceholder: "Enter opens",
 	}
 }
 
@@ -56,7 +56,7 @@ func TestDrawShowsPanelsTitlesAndPlaceholder(t *testing.T) {
 	for y := 0; y < 30; y++ {
 		all += text(&buf, y, 0, 120) + "\n"
 	}
-	for _, want := range []string{"Aktif (2)", "Folder / Sesi (+2 baru)", "Chat", "Explore · opus · bekerja", "alat: Read", "Enter untuk membuka", "nakama (2)", "[work]", "webshop"} {
+	for _, want := range []string{"Active (2)", "Folder / Session (+2 new)", "Chat", "Explore · opus · working", "tool: Read", "Enter opens", "nakama (2)", "[work]", "webshop"} {
 		if !strings.Contains(all, want) {
 			t.Errorf("screen lacks %q", want)
 		}
@@ -100,11 +100,11 @@ func TestScrollOffsetKeepsSelectionVisible(t *testing.T) {
 
 func TestStripLines(t *testing.T) {
 	got := StripLines("Explore", "opus", ui.StateWorking, 41, "Read", 2, "")
-	if got[0] != "Explore · opus · bekerja · konteks 41%" || got[1] != "alat: Read · 2 subagen" {
+	if got[0] != "Explore · opus · working · context 41%" || got[1] != "tool: Read · 2 subagents" {
 		t.Fatalf("%q", got)
 	}
-	got = StripLines("x", "", ui.StateWaiting, -1, "", 0, "Enter untuk membuka")
-	if got[0] != "x · menunggu izin" || got[1] != "Enter untuk membuka" {
+	got = StripLines("x", "", ui.StateWaiting, -1, "", 0, "Enter opens")
+	if got[0] != "x · needs approval" || got[1] != "Enter opens" {
 		t.Fatalf("%q", got)
 	}
 }
@@ -117,7 +117,7 @@ func TestDrawOverlayClearsAndStaysInsideItsRect(t *testing.T) {
 		}
 	}
 	r := Rect{10, 4, 30, 8}
-	DrawOverlay(&buf, r, "Bantuan", []string{"baris satu", "baris dua yang sangat panjang sekali sampai terpotong", "3", "4", "5", "6", "7 tidak muat"})
+	DrawOverlay(&buf, r, "Help", []string{"baris satu", "baris dua yang sangat panjang sekali sampai terpotong", "3", "4", "5", "6", "7 tidak muat"})
 	if got := text(&buf, 5, 11, 21); got != " baris sat" && !strings.HasPrefix(strings.TrimSpace(got), "baris") {
 		t.Fatalf("line inside overlay: %q", got)
 	}
@@ -130,7 +130,7 @@ func TestDrawOverlayClearsAndStaysInsideItsRect(t *testing.T) {
 	if strings.Contains(text(&buf, 5, 0, 60), "7 tidak muat") || strings.Contains(text(&buf, 11, 0, 60), "7 tidak") {
 		t.Fatal("lines beyond the box height must be cut")
 	}
-	if !strings.Contains(text(&buf, 4, 0, 60), "Bantuan") {
+	if !strings.Contains(text(&buf, 4, 0, 60), "Help") {
 		t.Fatal("title missing")
 	}
 }
@@ -140,7 +140,7 @@ func TestDrawEmptyTreeSaysHowToFillIt(t *testing.T) {
 	v := testView()
 	v.Tree = nil
 	Draw(&buf, v)
-	if got := text(&buf, v.Rects.Tree.Y+1, v.Rects.Tree.X, v.Rects.Tree.X+v.Rects.Tree.W); !strings.Contains(got, "f = pilih folder") {
+	if got := text(&buf, v.Rects.Tree.Y+1, v.Rects.Tree.X, v.Rects.Tree.X+v.Rects.Tree.W); !strings.Contains(got, "f = choose folders") {
 		t.Fatalf("%q", got)
 	}
 }

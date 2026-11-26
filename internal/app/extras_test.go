@@ -17,7 +17,7 @@ func TestNoticeWhenASessionWaitsOrFinishes(t *testing.T) {
 		t.Fatalf("the first look is no news: %v", got)
 	}
 	fm.info["a"] = monitor.Info{Status: monitor.Waiting}
-	if got := at(1); len(got) != 1 || !strings.Contains(got[0].Text, "menunggu") {
+	if got := at(1); len(got) != 1 || !strings.Contains(got[0].Text, "waiting") {
 		t.Fatalf("waiting: %v", got)
 	}
 	if got := at(2); len(got) != 0 {
@@ -29,7 +29,7 @@ func TestNoticeWhenASessionWaitsOrFinishes(t *testing.T) {
 	if got := at(4); len(got) != 0 {
 		t.Fatalf("a pause between tools is not the end: %v", got)
 	}
-	if got := at(8); len(got) != 1 || !strings.Contains(got[0].Text, "selesai") {
+	if got := at(8); len(got) != 1 || !strings.Contains(got[0].Text, "finished") {
 		t.Fatalf("finished: %v", got)
 	}
 }
@@ -40,7 +40,7 @@ func TestCrewListNamesTheCharacter(t *testing.T) {
 	m.Tick(t0)
 	m.selected = "a"
 	got := strings.Join(m.crewLines(80, 20, t0), "\n")
-	if !strings.Contains(got, "C · [") || !strings.Contains(got, "lead sesi · C") {
+	if !strings.Contains(got, "C · [") || !strings.Contains(got, "session lead · C") {
 		t.Fatalf("no character name:\n%s", got)
 	}
 }
@@ -84,7 +84,7 @@ func TestAMessageSendsTheSenderToTheReceiver(t *testing.T) {
 	if got := visit(time.Second); got != "b" {
 		t.Fatalf("visit %q", got)
 	}
-	if got := strings.Join(m.crewLines(80, 20, t0.Add(time.Second)), "\n"); !strings.Contains(got, "→ pesan ke") {
+	if got := strings.Join(m.crewLines(80, 20, t0.Add(time.Second)), "\n"); !strings.Contains(got, "→ message to") {
 		t.Fatalf("the list says nothing:\n%s", got)
 	}
 	if got := visit(time.Minute); got != "" {

@@ -75,7 +75,7 @@ func (p *FilterPicker) Apply(f *prefs.Folders) {
 }
 
 func (p *FilterPicker) Lines(w, h int) []string {
-	out := []string{"Folder yang ditampilkan", "Space centang · a semua · Enter simpan (tanpa centang: folder yang disorot) · esc batal", ""}
+	out := []string{"Folders shown", "Space check · a all · Enter save (nothing checked: the highlighted one) · esc cancel", ""}
 	vis := max(h-len(out), 1)
 	off := ScrollOffset(p.cursor, vis)
 	for i := off; i < len(p.items) && i < off+vis; i++ {
@@ -194,8 +194,8 @@ func (p *NewPicker) Result() (dir, account string, ok bool) {
 }
 
 func (p *NewPicker) Lines(w, h int) []string {
-	out := []string{"Sesi baru", "Ketik untuk menyaring folder, atau tulis path (/ atau ~) · Tab ganti akun · Enter mulai · esc batal", "> " + p.Query,
-		"Akun: " + p.account(p.dir()), ""}
+	out := []string{"New session", "Type to filter folders, or write a path (/ or ~) · Tab account · Enter start · esc cancel", "> " + p.Query,
+		"Account: " + p.account(p.dir()), ""}
 	vis := max(h-len(out), 1)
 	v := p.visible()
 	off := ScrollOffset(p.cursor, vis)

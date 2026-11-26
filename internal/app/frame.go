@@ -77,10 +77,10 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 			if name == "" {
 				name = in.SentTo
 			}
-			list = append(list, "    → pesan ke "+name)
+			list = append(list, "    → message to "+name)
 		}
 		if in.PendingTool != "" && (r.State == ui.StateWorking || r.State == ui.StateWaiting) {
-			list = append(list, "    alat: "+in.PendingTool)
+			list = append(list, "    tool: "+in.PendingTool)
 		}
 		if !untracked(r.ID) {
 			for _, sub := range m.mon.Subagents(r.ID, now) {
@@ -101,9 +101,9 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 			}
 		}
 	}
-	foot := []string{"", " Tab pilih agen · v kembali"}
+	foot := []string{"", " Tab select · v back"}
 	if c, ok := m.cards[m.selected]; ok {
-		foot = []string{strings.Repeat("─", footW), " AGEN TERPILIH", ""}
+		foot = []string{strings.Repeat("─", footW), " SELECTED AGENT", ""}
 		if side {
 			foot = foot[1:]
 		}
@@ -115,7 +115,7 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 		for _, f := range c.facts {
 			foot = append(foot, " "+f)
 		}
-		foot = append(foot, "", " Enter = bicara di panel chat")
+		foot = append(foot, "", " Enter = talk in chat")
 	}
 	room := height - 1 // list lines under the header
 	if !side {
@@ -126,7 +126,7 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 		list = list[first:]
 	}
 	list = append(list, make([]string, max(room-len(list), 0))...)[:room]
-	out := append([]string{fmt.Sprintf(" Kru (%d)", len(rows))}, list...)
+	out := append([]string{fmt.Sprintf(" Crew (%d)", len(rows))}, list...)
 	if side {
 		for i := range out {
 			card := ""
@@ -190,7 +190,7 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 		panel, panelRow, panelCol = m.crewLines(w, below, now), rows-below+2, 1
 	}
 	placed := m.world.Placed()
-	card := [3]string{" tidak ada agen terpilih (Tab untuk memilih)", "", ""}
+	card := [3]string{" no agent selected (Tab to select)", "", ""}
 	if c, ok := m.cards[m.selected]; ok {
 		card = c.rows()
 	}
@@ -305,15 +305,15 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 // strip is the two lines about the selected session above the chat.
 func (m *Model) strip(now time.Time, id string, s *session.Session) [2]string {
 	if id == "" {
-		return [2]string{"Tidak ada sesi terpilih", "Pilih sesi di daftar; Enter membuka"}
+		return [2]string{"No session selected", "Pick a session in the list; Enter opens it"}
 	}
 	e, _ := m.entry(now, id)
 	in := m.info(id, now)
 	hint := ""
 	if _, running := live.BySession(m.procs)[id]; s == nil && running {
-		hint = "dipakai di terminal lain: hanya bisa dilihat"
+		hint = "in use in another terminal: view only"
 	} else if s == nil {
-		hint = "Enter membuka sesi ini (resume)"
+		hint = "Enter opens this session (resume)"
 	}
 	subs := 0
 	if !untracked(id) {
@@ -341,7 +341,7 @@ func (m *Model) workView(w, h int, now time.Time) (workspace.View, workspace.Rec
 	v := workspace.View{Rects: rects, Active: active, ActiveSel: ai, Tree: tree, TreeSel: ti, Pane: pane, Query: m.query,
 		NewFolders: newFolders, Account: m.account, Strip: m.strip(now, id, s)}
 	if s == nil {
-		v.ChatPlaceholder = "Enter membuka sesi terpilih"
+		v.ChatPlaceholder = "Enter opens the selected session"
 	}
 	return v, rects, s
 }
@@ -353,7 +353,7 @@ func Frame(m *Model, w, h int, now time.Time) string {
 	}
 	if w < minW || h < minH {
 		m.drewOffice = false
-		msg := ansi.Truncate(fmt.Sprintf("terminal terlalu kecil (min %dx%d)", minW, minH), w, "")
+		msg := ansi.Truncate(fmt.Sprintf("terminal too small (min %dx%d)", minW, minH), w, "")
 		return "\x1b[?25l\x1b[2J\x1b[1;1H" + msg
 	}
 	m.syncSizes(now)
@@ -366,7 +366,7 @@ func Frame(m *Model, w, h int, now time.Time) string {
 	v, rects, s := m.workView(w, h, now)
 	workspace.Draw(&buf, v)
 	if m.mode == input.Home { // the office was asked for but its picture does not fit
-		putText(&buf, 0, " kantor: terlalu kecil untuk gambar, tekan v untuk kembali", uv.Style{Attrs: uv.AttrReverse})
+		putText(&buf, 0, " office: too small for the picture, press v to go back", uv.Style{Attrs: uv.AttrReverse})
 	}
 	var cx, cy int
 	showCursor := false
@@ -411,13 +411,13 @@ func (m *Model) overlayContent(w, h int, now time.Time) (string, []string, works
 	case ovFilter:
 		return "Folder", m.filter.Lines(iw, ih), r
 	case ovNew:
-		return "Sesi baru", m.newPick.Lines(iw, ih), r
+		return "New session", m.newPick.Lines(iw, ih), r
 	case ovDetail:
-		return "Detail: " + m.detailTitle(now), m.detailLines(now), r
+		return "Details: " + m.detailTitle(now), m.detailLines(now), r
 	}
 	lines := workspace.HelpLines(iw - 2)
 	m.helpScroll = max(min(m.helpScroll, len(lines)-ih), 0)
-	return "Bantuan", workspace.ScrollHelp(lines, m.helpScroll, ih), r
+	return "Help", workspace.ScrollHelp(lines, m.helpScroll, ih), r
 }
 
 func (m *Model) detailTitle(now time.Time) string {
@@ -433,16 +433,16 @@ func (m *Model) detailLines(now time.Time) []string {
 		ctx = fmt.Sprintf("%d%%", in.CtxPct)
 	}
 	out := []string{
-		fmt.Sprintf("%s · %s · akun %s", e.Title, index.FolderName(e.Cwd), e.Account),
-		fmt.Sprintf("status %s · konteks %s · token hari ini %d", workspace.StateWord(m.source(now).State(m.detailID)), ctx, in.TokensToday),
-		"", "Kejadian terakhir (terbaru dulu), esc menutup:",
+		fmt.Sprintf("%s · %s · account %s", e.Title, index.FolderName(e.Cwd), e.Account),
+		fmt.Sprintf("status %s · context %s · tokens today %d", workspace.StateWord(m.source(now).State(m.detailID)), ctx, in.TokensToday),
+		"", "Latest events (newest first), esc closes:",
 	}
 	acts := m.mon.Activity(m.detailID)
 	for _, a := range acts {
 		out = append(out, a.Time.Local().Format("15:04:05")+"  "+a.Text)
 	}
 	if len(acts) == 0 {
-		out = append(out, "(belum ada kejadian terbaca; sesi ini belum dipantau)")
+		out = append(out, "(no events read yet; this session is not being followed)")
 	}
 	return out
 }

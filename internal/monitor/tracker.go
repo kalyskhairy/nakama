@@ -107,7 +107,7 @@ func (t *Tracker) Apply(events []tr.Event, now time.Time) {
 			}
 		case tr.UserPrompt:
 			t.done = false
-			t.record(e.Time, now, "prompt pengguna")
+			t.record(e.Time, now, "user prompt")
 		case tr.ToolUse:
 			t.done = false
 			if e.To != "" {
@@ -118,7 +118,7 @@ func (t *Tracker) Apply(events []tr.Event, now time.Time) {
 			}
 			if _, dup := t.pending[e.ToolID]; !dup {
 				t.order = append(t.order, e.ToolID)
-				t.record(e.Time, now, "alat: "+e.ToolName)
+				t.record(e.Time, now, "tool: "+e.ToolName)
 			}
 			t.pending[e.ToolID] = e.ToolName
 		case tr.ToolResult:
@@ -138,7 +138,7 @@ func (t *Tracker) Apply(events []tr.Event, now time.Time) {
 			t.ctx, t.haveCtx = e.Usage.Input+e.Usage.CacheCreate+e.Usage.CacheRead, true
 			if e.MessageID != "" && !t.counted[e.MessageID] {
 				t.counted[e.MessageID] = true
-				t.record(e.Time, now, "balasan")
+				t.record(e.Time, now, "reply")
 				at := e.Time
 				if at.IsZero() {
 					at = now

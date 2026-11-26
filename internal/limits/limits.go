@@ -74,13 +74,13 @@ func Parse(body []byte) (five, seven Window, err error) {
 		Seven json.RawMessage `json:"seven_day"`
 	}
 	if json.Unmarshal(body, &r) != nil {
-		return five, seven, errors.New("jawaban tidak dikenali")
+		return five, seven, errors.New("unrecognised answer")
 	}
 	if five, err = parseWindow(r.Five); err != nil {
-		return five, seven, errors.New("jawaban tidak dikenali")
+		return five, seven, errors.New("unrecognised answer")
 	}
 	if seven, err = parseWindow(r.Seven); err != nil {
-		return five, seven, errors.New("jawaban tidak dikenali")
+		return five, seven, errors.New("unrecognised answer")
 	}
 	return five, seven, nil
 }
@@ -88,7 +88,7 @@ func Parse(body []byte) (five, seven Window, err error) {
 func readToken(dir string, now time.Time) (string, string) {
 	b, err := os.ReadFile(filepath.Join(dir, ".credentials.json"))
 	if err != nil {
-		return "", "tidak ada kredensial"
+		return "", "no credentials"
 	}
 	var c struct {
 		O struct {
@@ -97,14 +97,14 @@ func readToken(dir string, now time.Time) (string, string) {
 		} `json:"claudeAiOauth"`
 	}
 	if json.Unmarshal(b, &c) != nil || c.O.Token == "" {
-		return "", "tidak ada kredensial"
+		return "", "no credentials"
 	}
 	exp := c.O.Expires
 	if exp > 0 && exp < 1e12 { // seconds, not milliseconds
 		exp *= 1000
 	}
 	if exp > 0 && exp <= now.UnixMilli() {
-		return "", "token kedaluwarsa (buka claude)"
+		return "", "token expired (open claude)"
 	}
 	return c.O.Token, ""
 }
@@ -121,7 +121,7 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, dir string, now ti
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/api/oauth/usage", nil)
 	if err != nil {
-		u.Err = "alamat tidak valid"
+		u.Err = "invalid address"
 		return u
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -141,7 +141,7 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, dir string, now ti
 	defer resp.Body.Close()
 	switch {
 	case resp.StatusCode == http.StatusUnauthorized:
-		u.Err = "token ditolak (HTTP 401)"
+		u.Err = "token rejected (HTTP 401)"
 		return u
 	case resp.StatusCode != http.StatusOK:
 		u.Err = fmt.Sprintf("HTTP %d", resp.StatusCode)

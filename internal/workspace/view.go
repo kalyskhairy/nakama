@@ -34,7 +34,7 @@ type View struct {
 	ChatPlaceholder string // shown in the chat area when no terminal is open there
 }
 
-var stateWords = map[ui.State]string{ui.StateWaiting: "menunggu izin", ui.StateWorking: "bekerja", ui.StateActive: "aktif", ui.StateIdle: "idle", ui.StateExited: "selesai"}
+var stateWords = map[ui.State]string{ui.StateWaiting: "needs approval", ui.StateWorking: "working", ui.StateActive: "active", ui.StateIdle: "idle", ui.StateExited: "done"}
 
 func StateWord(st ui.State) string { return stateWords[st] }
 
@@ -105,32 +105,32 @@ func (v View) row(buf *uv.ScreenBuffer, r Rect, i int, text string, selected, fo
 func Draw(buf *uv.ScreenBuffer, v View) {
 	rs := v.Rects
 	if a := rs.Active; a.W > 0 && a.H > 0 {
-		box(buf, a, fmt.Sprintf("Aktif (%d)", len(v.Active)), v.Pane == PaneActive)
+		box(buf, a, fmt.Sprintf("Active (%d)", len(v.Active)), v.Pane == PaneActive)
 		vis := a.H - 2
 		off := ScrollOffset(v.ActiveSel, vis)
 		for i := 0; i < vis && off+i < len(v.Active); i++ {
 			r := v.Active[off+i]
 			text := fmt.Sprintf("%s %s%s · %s", ui.Glyph(r.State), tag(r.Account), r.Folder, r.Title)
 			if r.Claimed {
-				text += " (terminal lain)"
+				text += " (other terminal)"
 			}
 			v.row(buf, a, i, text, off+i == v.ActiveSel, v.Pane == PaneActive)
 		}
 	}
 	if t := rs.Tree; t.W > 0 && t.H > 0 {
-		title := "Folder / Sesi"
+		title := "Folder / Session"
 		if v.Account != "" {
 			title += " · " + v.Account
 		}
 		if v.NewFolders > 0 {
-			title += fmt.Sprintf(" (+%d baru)", v.NewFolders)
+			title += fmt.Sprintf(" (+%d new)", v.NewFolders)
 		}
 		if v.Query != "" {
 			title += " /" + v.Query
 		}
 		box(buf, t, title, v.Pane == PaneTree)
 		if len(v.Tree) == 0 {
-			put(buf, Rect{t.X + 1, t.Y + 1, t.W - 2, t.H - 2}, 0, 0, "kosong · f = pilih folder", uv.Style{Attrs: uv.AttrFaint})
+			put(buf, Rect{t.X + 1, t.Y + 1, t.W - 2, t.H - 2}, 0, 0, "empty · f = choose folders", uv.Style{Attrs: uv.AttrFaint})
 		}
 		vis := t.H - 2
 		off := ScrollOffset(v.TreeSel, vis)
@@ -146,7 +146,7 @@ func Draw(buf *uv.ScreenBuffer, v View) {
 			} else {
 				text = fmt.Sprintf("   %s %s%s", ui.Glyph(r.State), tag(r.Account), r.Title)
 				if r.Claimed {
-					text += " (terminal lain)"
+					text += " (other terminal)"
 				}
 			}
 			v.row(buf, t, i, text, off+i == v.TreeSel, v.Pane == PaneTree)
@@ -160,7 +160,7 @@ func Draw(buf *uv.ScreenBuffer, v View) {
 		if v.Pane == PaneChat {
 			st.Attrs = uv.AttrBold
 		}
-		put(buf, rs.ChatHead, 0, 0, "Chat ── Ctrl+Space = daftar ── z = zoom ── F1 = bantuan", st)
+		put(buf, rs.ChatHead, 0, 0, "Chat ── Ctrl+Space = list ── z = zoom ── F1 = help", st)
 	}
 	if c := rs.Chat; v.ChatPlaceholder != "" && c.W > 0 && c.H > 0 {
 		x := max((c.W-ansi.StringWidth(v.ChatPlaceholder))/2, 0)
@@ -176,14 +176,14 @@ func StripLines(title, model string, st ui.State, ctxPct int, pendingTool string
 	}
 	l1 = append(l1, StateWord(st))
 	if ctxPct >= 0 {
-		l1 = append(l1, fmt.Sprintf("konteks %d%%", ctxPct))
+		l1 = append(l1, fmt.Sprintf("context %d%%", ctxPct))
 	}
 	var l2 []string
 	if pendingTool != "" {
-		l2 = append(l2, "alat: "+pendingTool)
+		l2 = append(l2, "tool: "+pendingTool)
 	}
 	if subagents > 0 {
-		l2 = append(l2, fmt.Sprintf("%d subagen", subagents))
+		l2 = append(l2, fmt.Sprintf("%d subagents", subagents))
 	}
 	if len(l2) == 0 && hint != "" {
 		l2 = []string{hint}

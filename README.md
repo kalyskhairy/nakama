@@ -1,42 +1,41 @@
 # nakama
 
-Several interactive `claude` (Claude Code) sessions in one terminal, with an optional pixel-art
-"office" where every session is a character that walks, works and sleeps. *(The interface is in
-Indonesian.)*
+Several interactive `claude` (Claude Code) sessions in one terminal: every session of every folder,
+their status and context use, and an optional pixel-art "office" where each session is a character
+that walks, works and sleeps.
 
-Beberapa sesi Claude Code interaktif dalam satu terminal: daftar sesi di semua folder, status dan
-pemakaian konteks, serta "kantor" bergambar tempat tiap sesi menjadi karakter.
+> A personal project. Unofficial, and not affiliated with Anthropic.
 
-> Proyek pribadi, tidak resmi, dan tidak berafiliasi dengan Anthropic.
+## Features
 
-## Fitur
+- Three panels: active sessions, a folder/session tree, and the chat (the real `claude`, in a PTY).
+- Start new sessions or resume old ones from any folder; several accounts (`~/.claude`, `~/.claude-<name>`).
+- Per session: status (waiting, working, idle), subagents, context use, tokens today and plan limits.
+- Notifications when a session waits for you or finishes (terminal bell; a Windows notification under WSL).
+- Office (`v`): characters work at their own places, sleep in the rest room, visit the session they
+  message, and the unused ones stroll the corridor. Click a character to open its chat.
 
-- Tiga panel: sesi aktif, pohon folder/sesi, dan chat (claude asli lewat PTY).
-- Membuka sesi baru atau melanjutkan sesi lama dari semua folder; beberapa akun (`~/.claude`, `~/.claude-<nama>`).
-- Status tiap sesi (menunggu, bekerja, idle), subagen, konteks, token hari ini, dan sisa kuota.
-- Notifikasi saat sesi menunggumu atau selesai (bel terminal; notifikasi Windows bila di WSL).
-- Kantor (`v`): karakter bekerja di tempatnya, tidur di kamar istirahat, dan mendatangi sesi yang dikirimi pesan. Klik karakter untuk membuka chatnya.
+## Requirements
 
-## Kebutuhan
+- Linux or WSL2. Only tested on WSL2; some features use `/proc`, so macOS is not supported yet.
+- [Go](https://go.dev/dl/) 1.26 or newer.
+- [Claude Code](https://claude.com/claude-code) (`claude`) installed and logged in.
+- For the office: a terminal with **sixel** support (e.g. Windows Terminal 1.22+, WezTerm, foot).
+  Without it the three panels still work.
 
-- Linux atau WSL2. Hanya diuji di WSL2; sebagian fitur memakai `/proc`, jadi macOS belum didukung.
-- [Go](https://go.dev/dl/) 1.26 atau lebih baru.
-- [Claude Code](https://claude.com/claude-code) (`claude`) sudah terpasang dan login.
-- Untuk kantor bergambar: terminal yang mendukung **sixel** (mis. Windows Terminal 1.22+, WezTerm, foot). Tanpa itu, tiga panel tetap jalan.
-
-## Instalasi
+## Install
 
 ```sh
 go install github.com/kalyskhairy/nakama/cmd/nakama@latest
 ```
 
-Binernya ada di `$(go env GOPATH)/bin`. Pastikan folder itu ada di `PATH`:
+The binary lands in `$(go env GOPATH)/bin`. Make sure that folder is on your `PATH`:
 
 ```sh
 echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.bashrc && source ~/.bashrc
 ```
 
-Dari kode sumber:
+From source:
 
 ```sh
 git clone https://github.com/kalyskhairy/nakama.git
@@ -44,71 +43,74 @@ cd nakama
 go install ./cmd/nakama
 ```
 
-Lalu jalankan `nakama` dari folder mana pun. Pertama kali, pilih folder yang mau ditampilkan.
+Then run `nakama` from any folder. The first time, pick the folders you want to see.
 
-## Tombol utama
+## Main keys
 
-| Tombol | Fungsi |
+| Key | Action |
 |---|---|
-| `↑` `↓` / `j` `k` | pilih baris |
-| `Tab` | pindah panel |
-| `Enter` | buka sesi / chat |
-| `Ctrl+Space` | pindah dari chat ke daftar |
-| `n` | sesi baru |
-| `f` | pilih folder |
-| `z` | chat layar penuh |
-| `v` | kantor |
-| `x` | tutup sesi yang sudah selesai |
-| `F1` / `?` | bantuan lengkap |
-| `q` | keluar (**semua sesi yang dibuka nakama ikut berhenti**; bisa dilanjutkan lagi) |
+| `↑` `↓` / `j` `k` | select a row |
+| `Tab` | switch panel |
+| `Enter` | open a session / chat |
+| `Ctrl+Space` | from the chat back to the lists |
+| `n` | new session |
+| `f` | choose folders |
+| `z` | full screen chat |
+| `v` | office |
+| `x` | close a finished session |
+| `F1` / `?` | full help |
+| `q` | quit (**every session nakama opened stops too**; you can resume them later) |
 
-## Opsi
+## Options
 
-| Opsi | Arti |
+| Option | Meaning |
 |---|---|
-| `--theme <nama>` | tema kantor (bawaan `default`) |
-| `--graphics auto\|sixel\|off` | gambar kantor |
-| `--font 10x20` | ukuran sel (piksel) bila terminal tidak melaporkannya |
-| `--notify=false` | matikan notifikasi |
-| `--offline` | jangan pernah mengambil sisa kuota dari jaringan |
-| `--prefix 0x1d` | ganti `Ctrl+Space` (di sini `Ctrl+]`) |
-| `--context-window 200000` | untuk persentase konteks |
+| `--theme <name>` | office theme (default `default`) |
+| `--graphics auto\|sixel\|off` | office picture |
+| `--font 10x20` | cell size in pixels, if your terminal does not report it |
+| `--notify=false` | no notifications |
+| `--offline` | never fetch plan limits from the network |
+| `--prefix 0x1d` | replace `Ctrl+Space` (here with `Ctrl+]`) |
+| `--context-window 200000` | used for the context percentage |
 
-## Privasi dan hal yang perlu diketahui
+## Privacy, and things to know
 
-- nakama **membaca** `~/.claude*`: transkrip sesi dan status proses. Yang **ditulis** hanya `~/.config/nakama`.
-- Untuk menampilkan sisa kuota, nakama membaca token OAuth Claude Code dan memakainya **hanya** untuk satu permintaan ke `https://api.anthropic.com/api/oauth/usage` (paling sering sekali semenit per akun). Token tidak disimpan, ditampilkan, atau dicatat. Endpoint ini tidak didokumentasikan; `--offline` mematikannya.
-- nakama menjalankan claude dengan `CLAUDE_CODE_FORCE_SYNC_OUTPUT=1` agar chat tidak berkedip.
-- Format transkrip, berkas status, dan variabel di atas tidak resmi; versi Claude Code baru bisa mengubahnya.
-- Judul sesi muncul di notifikasi, jadi hati-hati saat berbagi layar.
+- nakama **reads** `~/.claude*`: session transcripts and process status. It only **writes** `~/.config/nakama`.
+- To show plan limits it reads Claude Code's OAuth token and uses it **only** for one request to
+  `https://api.anthropic.com/api/oauth/usage` (at most once a minute per account). The token is not
+  stored, shown or logged. This endpoint is undocumented; `--offline` turns it off.
+- It runs claude with `CLAUDE_CODE_FORCE_SYNC_OUTPUT=1` so the chat does not flicker.
+- The transcript format, the status files and that variable are not official; a new Claude Code
+  version may change them.
+- Session titles appear in notifications, so mind that when sharing your screen.
 
-## Tema kantor (buat sendiri)
+## Office themes (bring your own)
 
-Repo ini **tidak menyertakan gambar apa pun**. Buat tema di `~/.config/nakama/themes/default/`
-(atau nama lain, dipakai lewat `--theme`):
+This repository **ships no artwork**. Make a theme in `~/.config/nakama/themes/default/`
+(or another name, used with `--theme`):
 
 ```
 default/
-├── theme.json        # salin dari examples/theme.json lalu sesuaikan
-├── background.png    # denah dilihat dari atas, PNG
+├── theme.json        # copy examples/theme.json and adjust it
+├── background.png    # a floor plan seen from above, PNG
 └── sprites/
-    ├── captain/      # dihasilkan oleh import-sheet
+    ├── captain/      # made by import-sheet
     └── cook/
 ```
 
-### 1. Lembar sprite
+### 1. Sprite sheet
 
-Satu PNG per karakter, latar **magenta polos `#FF00FF`**, tanpa teks atau garis, **6 baris** yang
-terpisah jelas (minimal 12 piksel kosong antarbaris, 20 piksel antarframe):
+One PNG per character on a **plain magenta `#FF00FF`** background, no text or grid lines, **6 rows**
+clearly apart (at least 12 empty pixels between rows, 20 between frames):
 
-| Baris | Isi | Frame |
+| Row | Content | Frames |
 |---|---|---|
-| 1 | jalan ke bawah | 4 |
-| 2 | jalan ke kiri (dibuat ulang sebagai cermin baris 3) | 4 |
-| 3 | jalan ke kanan | 4 |
-| 4 | jalan ke atas | 4 |
-| 5 | tidur | 2 |
-| 6 | bekerja | 4 |
+| 1 | walking down | 4 |
+| 2 | walking left (rebuilt as the mirror of row 3) | 4 |
+| 3 | walking right | 4 |
+| 4 | walking up | 4 |
+| 5 | sleeping | 2 |
+| 6 | working | 4 |
 
 ```sh
 nakama theme import-sheet --sheet captain.png --theme ~/.config/nakama/themes/default --name captain
@@ -116,36 +118,36 @@ nakama theme import-sheet --sheet captain.png --theme ~/.config/nakama/themes/de
 
 ### 2. `theme.json`
 
-Koordinat `x` dan `y` adalah pecahan 0..1 dari gambar latar; titiknya adalah posisi **kaki** karakter.
+`x` and `y` are fractions 0..1 of the background; a point is where the character's **feet** are.
 
-| Kunci | Arti |
+| Key | Meaning |
 |---|---|
-| `background.file`, `background.crop` | gambar latar; `crop` opsional `[x, y, lebar, tinggi]` |
-| `charHeight` | tinggi karakter relatif terhadap tinggi latar |
-| `characters` | nama → folder sprite |
-| `agentTypes` | jenis agen → karakter; `default` wajib |
-| `sessionCharacters` | opsional: satu karakter per sesi; yang pertama selalu dipakai lebih dulu |
-| `heights` | opsional: tinggi per karakter (1 = biasa) |
-| `corridor` | opsional: node lorong (minimal 2, berurutan); karakter `sessionCharacters` yang tidak dipakai sesi nongkrong dan jalan-jalan di situ |
-| `nodes`, `edges`, `entrance` | jalur yang dilewati karakter; semua node harus tersambung |
-| `stations` | tempat `work` atau `rest`; `for` berisi nama karakter atau jenis agen yang diutamakan |
+| `background.file`, `background.crop` | background picture; optional crop `[x, y, width, height]` |
+| `charHeight` | character height relative to the background height |
+| `characters` | name → sprite folder |
+| `agentTypes` | agent type → character; `default` is required |
+| `sessionCharacters` | optional: one character per session; the first is always taken first |
+| `heights` | optional: per-character height (1 = normal) |
+| `corridor` | optional: corridor nodes (at least 2, in order); the `sessionCharacters` no session uses stroll there |
+| `nodes`, `edges`, `entrance` | the paths characters walk; every node must be connected |
+| `stations` | `work` or `rest` places; `for` lists the characters or agent types that prefer them |
 
-Butuh minimal satu stasiun `work` dan satu `rest`.
+You need at least one `work` and one `rest` station.
 
-### 3. Periksa
+### 3. Check it
 
 ```sh
 nakama theme preview --theme ~/.config/nakama/themes/default --out preview.png
 ```
 
-Pastikan kamu berhak memakai gambar yang kamu pasang.
+Make sure you have the right to use the artwork you put in.
 
-## Pengembangan
+## Development
 
 ```sh
 go vet ./... && go test ./... -race
 ```
 
-## Lisensi
+## License
 
 [MIT](LICENSE)

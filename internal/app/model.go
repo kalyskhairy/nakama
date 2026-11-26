@@ -472,13 +472,13 @@ func (m *Model) alive() int {
 // newSession starts a PTY and opens its chat.
 func (m *Model) newSession(req SpawnReq, now time.Time) bool {
 	if len(m.sessions) >= maxSessions {
-		m.say(now, "maksimum %d sesi", maxSessions)
+		m.say(now, "at most %d sessions", maxSessions)
 		return false
 	}
 	w, h := m.chatSize(now)
 	s, err := m.spawn(req, w, h)
 	if err != nil {
-		m.say(now, "gagal memulai sesi: %v", err)
+		m.say(now, "could not start the session: %v", err)
 		return false
 	}
 	acct := "personal"
@@ -525,7 +525,7 @@ func (m *Model) quit(now time.Time) {
 		return
 	}
 	m.quitAskedAt = now
-	m.say(now, "%d sesi masih berjalan, tekan q lagi untuk keluar", n)
+	m.say(now, "%d sessions still running, press q again to quit", n)
 }
 
 // ---- the office
@@ -611,7 +611,7 @@ func sceneStatus(in monitor.Status, exited bool) scene.Status {
 	return scene.Idle
 }
 
-var statusText = map[scene.Status]string{scene.Working: "bekerja", scene.Active: "aktif", scene.Idle: "idle", scene.Waiting: "menunggu izin", scene.Exited: "selesai"}
+var statusText = map[scene.Status]string{scene.Working: "working", scene.Active: "active", scene.Idle: "idle", scene.Waiting: "needs approval", scene.Exited: "done"}
 
 // card is what is known about one agent.
 type card struct {
@@ -633,9 +633,9 @@ func (c card) rows() [3]string {
 		if l2 != " " {
 			l2 += " · "
 		}
-		l2 += strings.Replace(f, "konteks: ", "konteks ", 1)
+		l2 += strings.Replace(f, "context: ", "context ", 1)
 	}
-	return [3]string{l1, l2, " Enter buka chat · i tutup kartu · Tab pilih agen · v kembali"}
+	return [3]string{l1, l2, " Enter chat · i close card · Tab select · v back"}
 }
 
 func newCard(title, role string, st scene.Status, in monitor.Info) card {
@@ -647,9 +647,9 @@ func newCard(title, role string, st scene.Status, in monitor.Info) card {
 	if in.CtxPct >= 0 {
 		ctx = fmt.Sprintf("%d%%", in.CtxPct)
 	}
-	c.facts = append(c.facts, "status: "+statusText[st], "konteks: "+ctx)
+	c.facts = append(c.facts, "status: "+statusText[st], "context: "+ctx)
 	if in.PendingTool != "" && (st == scene.Working || st == scene.Waiting) {
-		c.facts = append(c.facts, "alat: "+in.PendingTool)
+		c.facts = append(c.facts, "tool: "+in.PendingTool)
 	}
 	return c
 }
@@ -730,7 +730,7 @@ func (m *Model) Tick(now time.Time) {
 		in := m.info(key, now)
 		st := sceneStatus(in.Status, false)
 		actors = append(actors, scene.Actor{ID: key, Type: "session", Title: r.Title, Status: st, LastActive: in.LastActive, Lead: true, Character: m.cast[key], Visit: m.visiting(key, in, now)})
-		role := "lead sesi"
+		role := "session lead"
 		if name := charName(m.cast[key]); name != "" {
 			role += " · " + name
 		}
@@ -745,7 +745,7 @@ func (m *Model) Tick(now time.Time) {
 				title = sub.Type
 			}
 			actors = append(actors, scene.Actor{ID: id, Type: sub.Type, Title: title, Status: sst, LastActive: sub.LastActive, Character: m.cast[key]})
-			owner[id], cards[id] = key, newCard(title, "subagen "+sub.Type, sst, sub.Info)
+			owner[id], cards[id] = key, newCard(title, "subagent "+sub.Type, sst, sub.Info)
 		}
 	}
 	order := make([]string, len(actors))

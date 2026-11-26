@@ -66,19 +66,19 @@ func (m *Model) officeChatID(now time.Time) string {
 // officeChat is the header and the rows of the chat panel, and the PTY in it, if any.
 func (m *Model) officeChat(r officeRects, now time.Time) (head string, rows []string, s *session.Session) {
 	id := m.officeChatID(now)
-	title, note := "", "Tab memilih kru, lalu Enter untuk bicara"
+	title, note := "", "Tab selects a crew member, then Enter to talk"
 	if id != "" {
 		e, _ := m.entry(now, id)
 		title = " " + e.Title + " ──"
 		s = m.ownedAll()[id]
-		note = "Enter membuka sesi ini (resume)"
+		note = "Enter opens this session (resume)"
 		if _, running := live.BySession(m.procs)[id]; running {
-			note = "sesi ini dipakai di terminal lain: hanya bisa dilihat"
+			note = "this session is in use in another terminal: view only"
 		}
 	}
-	hint := "Enter = bicara · z = layar penuh · v = daftar"
+	hint := "Enter = talk · z = full screen · v = list"
 	if m.mode == input.Chat {
-		hint = "Ctrl+Space = pilih kru"
+		hint = "Ctrl+Space = pick crew"
 	}
 	head = padTo(fmt.Sprintf("Chat ──%s %s ", title, hint), r.head.W)
 	buf := uv.NewScreenBuffer(r.chat.W, r.chat.H)

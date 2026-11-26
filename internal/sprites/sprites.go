@@ -133,7 +133,7 @@ func Slice(src image.Image, targetH int) (*Sheet, error) {
 	}
 	bands := runs(rowHas, 12)
 	if len(bands) != 6 {
-		return nil, fmt.Errorf("lembar sprite harus punya 6 baris, ditemukan %d", len(bands))
+		return nil, fmt.Errorf("a sprite sheet needs 6 rows, found %d", len(bands))
 	}
 	var rows [6][]*image.NRGBA
 	for i, bd := range bands {
@@ -149,7 +149,7 @@ func Slice(src image.Image, targetH int) (*Sheet, error) {
 			rows[i] = append(rows[i], sub(im, image.Rect(c.a, bd.a, c.b+1, bd.b+1)))
 		}
 		if len(rows[i]) == 0 {
-			return nil, errors.New("baris sprite kosong")
+			return nil, errors.New("empty sprite row")
 		}
 	}
 
@@ -160,7 +160,7 @@ func Slice(src image.Image, targetH int) (*Sheet, error) {
 		}
 	}
 	if maxH == 0 || targetH <= 0 {
-		return nil, errors.New("tinggi sprite tidak valid")
+		return nil, errors.New("invalid sprite height")
 	}
 	s := &Sheet{}
 	for ri := range rows {
@@ -209,14 +209,14 @@ func Load(dir string) (*Sheet, error) {
 			im, err := png.Decode(fh)
 			fh.Close()
 			if err != nil {
-				return nil, fmt.Errorf("sprite %s_%d.png rusak: %w", name, i, err)
+				return nil, fmt.Errorf("broken sprite %s_%d.png: %w", name, i, err)
 			}
 			n := image.NewNRGBA(im.Bounds())
 			draw.Draw(n, n.Bounds(), im, im.Bounds().Min, draw.Src)
 			s.Rows[ri] = append(s.Rows[ri], n)
 		}
 		if len(s.Rows[ri]) == 0 {
-			return nil, fmt.Errorf("sprite %s tidak ditemukan di %s", name, dir)
+			return nil, fmt.Errorf("no %s sprite in %s", name, dir)
 		}
 	}
 	return s, nil

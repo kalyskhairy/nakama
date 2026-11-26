@@ -117,14 +117,14 @@ func TestOfficeIsReachedWithV(t *testing.T) {
 
 	plain := newModel(t, spawnCmd("sleep", "30"))
 	plain.HandleEvent(key("v"), t0)
-	if plain.Mode() != input.Work || !strings.Contains(plain.Message(t0), "kantor tidak aktif") {
+	if plain.Mode() != input.Work || !strings.Contains(plain.Message(t0), "office unavailable") {
 		t.Fatalf("no office: mode %v msg %q", plain.Mode(), plain.Message(t0))
 	}
 
 	off := newModel(t, spawnCmd("sleep", "30"))
-	off.SetOffice(&OfficeConfig{Reason: "grafis dimatikan"})
+	off.SetOffice(&OfficeConfig{Reason: "graphics dimatikan"})
 	off.HandleEvent(key("v"), t0)
-	if off.Mode() != input.Work || !strings.Contains(off.Message(t0), "grafis dimatikan") {
+	if off.Mode() != input.Work || !strings.Contains(off.Message(t0), "graphics dimatikan") {
 		t.Fatalf("the reason must be given: mode %v msg %q", off.Mode(), off.Message(t0))
 	}
 }
@@ -237,11 +237,11 @@ func TestCardRowsAppearUnderImageAndStatusLineStays(t *testing.T) {
 	m.HandleEvent(key("tab"), t0)
 	m.HandleEvent(key("i"), t0)
 	rows := plainRows(Frame(m, 42, 16, t0), 16)
-	if !strings.Contains(rows[15], "F1 bantuan") {
+	if !strings.Contains(rows[15], "F1 help") {
 		t.Fatalf("status line is not the last row: %q", rows[15])
 	}
 	card := strings.Join(rows[12:15], "\n")
-	for _, want := range []string{"lead sesi", "sonnet-5-5", "62%", "bekerja", "alat: Bash", "Enter"} {
+	for _, want := range []string{"session lead", "sonnet-5-5", "62%", "working", "tool: Bash", "Enter"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("card lacks %q: %q", want, card)
 		}
@@ -280,7 +280,7 @@ func TestFrameFallsBackToTextWhenPictureDoesNotFit(t *testing.T) {
 	m.SetOffice(officeCfg(t, 1, 1)) // 1x1 pixel cells: a 45x11 screen is far too small for a 400x200 picture
 	m.mode = input.Home
 	f := Frame(m, 45, 12, t0)
-	if strings.Contains(f, sixelStart) || !strings.Contains(ansiStrip(f), "terlalu kecil") {
+	if strings.Contains(f, sixelStart) || !strings.Contains(ansiStrip(f), "too small") {
 		t.Fatalf("%q", ansiStrip(f))
 	}
 }
@@ -413,7 +413,7 @@ func TestOfficeShowsActiveSessionsFromOtherTerminals(t *testing.T) {
 	}
 	m.HandleEvent(key("tab"), t0)
 	m.HandleEvent(key("enter"), t0)
-	if len(rs.reqs) != 0 || m.Mode() != input.Home || !strings.Contains(m.Message(t0), "terminal lain") {
+	if len(rs.reqs) != 0 || m.Mode() != input.Home || !strings.Contains(m.Message(t0), "another terminal") {
 		t.Fatalf("a session of another terminal must not be resumed: spawns %d mode %v msg %q", len(rs.reqs), m.Mode(), m.Message(t0))
 	}
 }
@@ -448,12 +448,12 @@ func TestOfficeCrewPanelUsesTheSpareSpace(t *testing.T) {
 	m, _ := officeModel(t, info, nil, "a")
 	m.Tick(t0)
 	f := ansiStrip(Frame(m, 120, 40, t0))
-	if !strings.Contains(f, "Kru (1)") || !strings.Contains(f, "alat: Bash") {
+	if !strings.Contains(f, "Crew (1)") || !strings.Contains(f, "tool: Bash") {
 		t.Fatalf("spare columns must list the crew: %q", f[max(0, len(f)-600):])
 	}
 	m.Resize(42, 13) // the picture fills it: no room for a panel
 	m.SetCellSize(10, 20)
-	if f := ansiStrip(Frame(m, 42, 13, t0)); strings.Contains(f, "Kru (") {
+	if f := ansiStrip(Frame(m, 42, 13, t0)); strings.Contains(f, "Crew (") {
 		t.Fatal("a panel without room for it")
 	}
 }
@@ -502,7 +502,7 @@ func TestExitedSessionLeavesTheOffice(t *testing.T) {
 	if as := m.Actors(); len(as) != 1 || as[0].ID != "b" {
 		t.Fatalf("a finished session must leave the ship: %+v", as)
 	}
-	if got := strings.Join(m.crewLines(40, 20, t0), "\n"); !strings.Contains(got, "Kru (1)") {
+	if got := strings.Join(m.crewLines(40, 20, t0), "\n"); !strings.Contains(got, "Crew (1)") {
 		t.Fatalf("and the crew list:\n%s", got)
 	}
 	if n := len(m.activeRows(t0)); n != 2 {

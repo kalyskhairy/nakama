@@ -83,10 +83,10 @@ func TestWideCrewPanelPutsTheCardBesideTheList(t *testing.T) {
 	m.selected = "f"
 	lines := m.crewLines(90, 16, t0)
 	all := strings.Join(lines, "\n")
-	if len(lines) != 16 || !strings.Contains(lines[0], "Kru (6)") || !strings.Contains(lines[0], "│") {
+	if len(lines) != 16 || !strings.Contains(lines[0], "Crew (6)") || !strings.Contains(lines[0], "│") {
 		t.Fatalf("two columns:\n%s", all)
 	}
-	if !strings.Contains(all, "AGEN TERPILIH") || !strings.Contains(all, "\n>") {
+	if !strings.Contains(all, "SELECTED AGENT") || !strings.Contains(all, "\n>") {
 		t.Fatalf("the selected one stays visible in a short list:\n%s", all)
 	}
 	for _, l := range lines {
@@ -171,7 +171,7 @@ func TestSelectedCardInTheCrewPanelHasOneFactPerLine(t *testing.T) {
 	m.Tick(t0)
 	m.selected = "a"
 	long := m.cards["a"]
-	long.title = "Perbaiki perhitungan ongkos kirim pada keranjang"
+	long.title = "Fix the shipping cost calculation in the shopping cart"
 	m.cards["a"] = long
 	lines := m.crewLines(30, 30, t0)
 	var got []string
@@ -179,12 +179,12 @@ func TestSelectedCardInTheCrewPanelHasOneFactPerLine(t *testing.T) {
 		got = append(got, strings.TrimSpace(l))
 	}
 	all := "\n" + strings.Join(got, "\n") + "\n"
-	for _, want := range []string{"AGEN TERPILIH", "lead sesi", "model: opus-5-5", "status: bekerja", "konteks: 62%", "alat: Bash", "Enter = bicara di panel chat"} {
+	for _, want := range []string{"SELECTED AGENT", "session lead", "model: opus-5-5", "status: working", "context: 62%", "tool: Bash", "Enter = talk in chat"} {
 		if !strings.Contains(all, "\n"+want+"\n") {
 			t.Errorf("no line %q in:%s", want, all)
 		}
 	}
-	if !strings.Contains(strings.Join(strings.Fields(all), " "), "Perbaiki perhitungan ongkos kirim pada keranjang") {
+	if !strings.Contains(strings.Join(strings.Fields(all), " "), "Fix the shipping cost calculation in the shopping cart") {
 		t.Errorf("the title must be whole:%s", all)
 	}
 }
