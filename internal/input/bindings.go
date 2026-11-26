@@ -13,6 +13,8 @@ var Bindings = []Binding{
 	{"Lists", "a", "account shown in the tree: all, personal, work (Active always shows all)"},
 	{"Lists", "n", "new session in a folder"},
 	{"Lists", "d", "session details: the last 50 events"},
+	{"Lists", "u", "usage: plan limits, tokens per day, per account and per session"},
+	{"Lists", "s", "search what was said in every session; Enter opens it"},
 	{"Lists", "/", "filter folders and sessions by text (Enter done, esc clear)"},
 	{"Lists", "v", "go to the office"},
 	{"Lists", "x", "close a finished nakama session"},

@@ -60,7 +60,8 @@ func Glyph(s State) string {
 	return "○"
 }
 
-func formatTokens(n int) string {
+// Tokens writes a token count short.
+func Tokens(n int) string {
 	switch {
 	case n >= 1_000_000:
 		return fmt.Sprintf("%.1fM tok", float64(n)/1e6)
@@ -137,7 +138,7 @@ func StatusLine(msg string, sum Summary, width int) string {
 	}
 	tokens := ""
 	if sum.TokensToday > 0 {
-		if tk := "active " + formatTokens(sum.TokensToday); take(tk) {
+		if tk := "active " + Tokens(sum.TokensToday); take(tk) {
 			tokens = tk
 		}
 	}

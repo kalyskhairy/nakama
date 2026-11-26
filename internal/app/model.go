@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kalyskhairy/nakama/internal/history"
 	"github.com/kalyskhairy/nakama/internal/index"
 	"github.com/kalyskhairy/nakama/internal/input"
 	"github.com/kalyskhairy/nakama/internal/limits"
@@ -78,6 +79,8 @@ const (
 	ovFilter
 	ovNew
 	ovDetail
+	ovUsage
+	ovSearch
 )
 
 type Model struct {
@@ -141,19 +144,28 @@ type Model struct {
 	view       int
 	world      *scene.World
 	actors     []scene.Actor
-	order      []string          // actor ids as the crew list shows them: what Tab and the arrows walk
-	owner      map[string]string // actor id -> id of the session it belongs to
-	cards      map[string]card
-	lastPic    *image.NRGBA      // the office picture on the screen
-	shipLay    office.Layout     // and where it is: for clicks
-	seen       map[string]*watch // session id -> what notices are judged against
-	notices    []Notice
-	cast       map[string]string // session id -> character, kept for as long as nakama runs
-	selected   string
-	cardOpen   bool
-	drewOffice bool   // the screen currently holds the office picture
-	lastKey    string // layout of the last office frame; a change clears the screen
-	lastSig    string // everything the last office frame showed; unchanged means nothing is sent
+	roots      func() []string // transcript roots, for usage and search
+	background func(work func() func())
+	report     *history.Report
+	hits       []history.Hit
+	hit        int
+	searching  bool
+	searchSeq  int
+	// what is typed, and what the hits are for
+	searchQuery, searched string
+	order                 []string          // actor ids as the crew list shows them: what Tab and the arrows walk
+	owner                 map[string]string // actor id -> id of the session it belongs to
+	cards                 map[string]card
+	lastPic               *image.NRGBA      // the office picture on the screen
+	shipLay               office.Layout     // and where it is: for clicks
+	seen                  map[string]*watch // session id -> what notices are judged against
+	notices               []Notice
+	cast                  map[string]string // session id -> character, kept for as long as nakama runs
+	selected              string
+	cardOpen              bool
+	drewOffice            bool   // the screen currently holds the office picture
+	lastKey               string // layout of the last office frame; a change clears the screen
+	lastSig               string // everything the last office frame showed; unchanged means nothing is sent
 }
 
 var (

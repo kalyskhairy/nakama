@@ -153,6 +153,15 @@ func main() {
 		}
 	})
 
+	m.SetHistoryRoots(monitor.Roots)
+	m.SetBackground(func(work func() func()) { // usage and search read every transcript
+		safeGo(fatal, func() {
+			apply := work()
+			runLocked(&mu, apply)
+			markDirty()
+		})
+	})
+
 	// every second: read what the transcripts gained
 	safeGo(fatal, func() {
 		t := time.NewTicker(time.Second)

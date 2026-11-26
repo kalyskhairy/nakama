@@ -415,6 +415,12 @@ func (m *Model) overlayContent(w, h int, now time.Time) (string, []string, works
 		return "Folder", m.filter.Lines(iw, ih), r
 	case ovNew:
 		return "New session", m.newPick.Lines(iw, ih), r
+	case ovUsage:
+		lines := m.usageLines(now)
+		m.helpScroll = max(min(m.helpScroll, len(lines)-ih), 0)
+		return "Usage", workspace.ScrollHelp(lines, m.helpScroll, ih), r
+	case ovSearch:
+		return "Search history", m.searchLines(iw, ih, now), r
 	case ovDetail:
 		return "Details: " + m.detailTitle(now), m.detailLines(now), r
 	}

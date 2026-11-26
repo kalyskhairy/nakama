@@ -116,6 +116,12 @@ func (m *Model) enter(now time.Time) {
 	if !ok {
 		return
 	}
+	m.openEntry(e, now)
+}
+
+// openEntry brings up a session by the rules of Enter: switch to it, resume it, or say why not.
+func (m *Model) openEntry(e index.Entry, now time.Time) {
+	id := e.ID
 	switch workspace.Decide(e, m.source(now)) {
 	case workspace.Switch:
 		for i, s := range m.sessions {
@@ -305,7 +311,7 @@ func (m *Model) Input(data []byte, now time.Time) {
 			case m.mode == input.Chat:
 				batch = append(batch, data[i])
 				i++
-			case m.querying || (m.mode == input.Overlay && m.overlay == ovNew): // a text box: typed, never a command
+			case m.querying || (m.mode == input.Overlay && (m.overlay == ovNew || m.overlay == ovSearch)): // a text box: typed, never a command
 				r, n := utf8.DecodeRune(data[i:])
 				if r >= ' ' && r != utf8.RuneError && r != 0x7f {
 					m.HandleEvent(input.Event{Kind: input.EvKey, Key: string(r)}, now)
@@ -441,6 +447,10 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 		} else {
 			m.say(now, "open a session first (Enter), then zoom")
 		}
+	case "u":
+		m.openUsage(now)
+	case "s":
+		m.openSearch()
 	case "a":
 		m.cycleAccount(now)
 	case "f":
@@ -607,6 +617,17 @@ func (m *Model) overlayEvent(ev input.Event, now time.Time) {
 	}
 	k := ev.Key
 	switch m.overlay {
+	case ovSearch:
+		m.searchKey(k, now)
+	case ovUsage:
+		switch k {
+		case "esc", "q", "u":
+			m.closeOverlay(now)
+		case "up", "k":
+			m.helpScroll = max(m.helpScroll-1, 0)
+		case "down", "j":
+			m.helpScroll++
+		}
 	case ovHelp:
 		switch k {
 		case "esc", "q", "?", "h":

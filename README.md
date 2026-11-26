@@ -14,6 +14,7 @@ that walks, works and sleeps.
 - Start new sessions or resume old ones from any folder; several accounts (`~/.claude`, `~/.claude-<name>`).
 - Per session: status (waiting, working, idle), subagents, context use, tokens today and plan limits.
 - A warning when a session's context is 80% full.
+- A usage screen, and search through the conversations of every session.
 - Notifications when a session waits for you or finishes (terminal bell; a Windows notification under WSL).
 - Office (`v`): characters work at their own places, sleep in the rest room, visit the session they
   message, and the unused ones stroll the corridor. Click a character to open its chat.
@@ -61,6 +62,8 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
 | `z` | full screen chat |
 | `v` | office |
 | `x` | close a finished session |
+| `u` | usage: plan limits, tokens per day, account and session |
+| `s` | search what was said in every session |
 | `F1` / `?` | full help |
 | `q` | quit (**every session nakama opened stops too**; you can resume them later) |
 
