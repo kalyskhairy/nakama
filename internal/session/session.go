@@ -30,6 +30,7 @@ type Session struct {
 	ptmx     *os.File
 	cmd      *exec.Cmd
 	title    string
+	start    string // when the child started, to tell it from a later process with its number
 	id       string
 	exited   atomic.Bool
 	closer   sync.Once
@@ -71,6 +72,7 @@ func Start(cfg Config, onChange func()) (*Session, error) {
 		wsig:     make(chan struct{}, 1),
 		wdone:    make(chan struct{}),
 	}
+	s.start = startTime(c.Process.Pid)
 	s.emu.SetCallbacks(vt.Callbacks{
 		EnableMode:  func(m ansi.Mode) { s.setMode(m, true) },
 		DisableMode: func(m ansi.Mode) { s.setMode(m, false) },

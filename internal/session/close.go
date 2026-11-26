@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,13 +30,30 @@ func signalSession(leader int, sig syscall.Signal) {
 	}
 }
 
+// startTime is when a process started (field 22 of /proc/<pid>/stat), or "" if there is none.
+func startTime(pid int) string {
+	b, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/stat")
+	if err != nil {
+		return ""
+	}
+	if f := bytes.Fields(b[bytes.LastIndexByte(b, ')')+1:]); len(f) > 19 {
+		return string(f[19])
+	}
+	return ""
+}
+
 // Close ends the session: a hang-up first, so claude can finish writing its transcript, then a kill
 // for whatever is left.
 func (s *Session) Close() {
 	s.closer.Do(func() {
 		close(s.wdone)
+		defer s.emu.InputPipe().(io.Closer).Close() // ends the replies goroutine, which holds the screen
 		if s.cmd.Process != nil {
 			pid := s.cmd.Process.Pid
+			if now := startTime(pid); now != "" && now != s.start {
+				s.ptmx.Close() // the number now belongs to another program: its session is not ours
+				return
+			}
 			if !s.Exited() {
 				signalSession(pid, syscall.SIGHUP)
 				for end := time.Now().Add(hangupWait); !s.Exited() && time.Now().Before(end); {
