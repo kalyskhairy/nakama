@@ -34,6 +34,7 @@ type Theme struct {
 	// choosing by agent type.
 	SessionCharacters []string
 	Heights           map[string]float64 // character name -> height relative to CharHeight; absent = 1
+	Corridor          []string           // nodes of the passage where the characters not in use hang about
 	Nodes             map[string]Point
 	Edges             [][2]string
 	Entrance          string
@@ -53,6 +54,7 @@ type file struct {
 	Entrance          string                            `json:"entrance"`
 	SessionCharacters []string                          `json:"sessionCharacters"`
 	Heights           map[string]float64                `json:"heights"`
+	Corridor          []string                          `json:"corridor"`
 	Stations          []struct {
 		ID, Kind, Room, Node string
 		X, Y                 float64
@@ -120,6 +122,15 @@ func Load(dir string) (*Theme, error) {
 	if _, ok := t.Nodes[f.Entrance]; !ok {
 		return nil, fmt.Errorf("entrance %q bukan node (node)", f.Entrance)
 	}
+	for _, id := range f.Corridor {
+		if _, ok := t.Nodes[id]; !ok {
+			return nil, fmt.Errorf("corridor merujuk node yang tidak ada (node): %q", id)
+		}
+	}
+	if len(f.Corridor) == 1 {
+		return nil, fmt.Errorf("corridor butuh minimal dua node")
+	}
+	t.Corridor = f.Corridor
 	adj := map[string][]string{}
 	for _, e := range f.Edges {
 		if _, ok := t.Nodes[e[0]]; !ok {

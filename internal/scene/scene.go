@@ -48,6 +48,7 @@ type Placed struct {
 	Mark      rune // '?' waiting, '✓' exited, 'z' asleep, 0 none
 	Dim       bool
 	Sub       bool // a subagent, drawn as a shadow
+	Idle      bool // nobody: a character no session wears, hanging about the corridor
 }
 
 const (
@@ -76,13 +77,15 @@ type World struct {
 	actors  map[string]Actor
 	station map[string]theme.Station
 	bodies  map[string]*body
+	idle    map[string]*body  // character -> stroller
+	worn    map[string]string // actor id -> character, of the leads last seen
 	lastNow time.Time
 	aspect  float64 // background height / width, so distances are the same in both axes
 }
 
 func NewWorld(t *theme.Theme) *World {
 	w := &World{th: t, assign: map[string]string{}, actors: map[string]Actor{}, station: map[string]theme.Station{},
-		bodies: map[string]*body{}, aspect: 1}
+		bodies: map[string]*body{}, idle: map[string]*body{}, aspect: 1}
 	if t.Background != nil {
 		if b := t.Background.Bounds(); b.Dx() > 0 {
 			w.aspect = float64(b.Dy()) / float64(b.Dx())
@@ -313,17 +316,21 @@ func (w *World) seatCaptain(present map[string]Actor) {
 
 func (w *World) dist(a, b theme.Point) float64 { return math.Hypot(a.X-b.X, (a.Y-b.Y)*w.aspect) }
 
-// route lists the points to walk from pos to a station: to the nearest node, along the
-// graph, then to the station itself.
-func (w *World) route(pos theme.Point, st theme.Station) []theme.Point {
+func (w *World) nearestNode(pos theme.Point) string {
 	from, best := "", math.Inf(1)
 	for id, n := range w.th.Nodes {
 		if d := w.dist(pos, n); d < best || (d == best && id < from) {
 			from, best = id, d
 		}
 	}
+	return from
+}
+
+// route lists the points to walk from pos to a station: to the nearest node, along the
+// graph, then to the station itself.
+func (w *World) route(pos theme.Point, st theme.Station) []theme.Point {
 	var pts []theme.Point
-	for _, id := range Path(w.th.Nodes, w.th.Edges, from, st.Node) {
+	for _, id := range Path(w.th.Nodes, w.th.Edges, w.nearestNode(pos), st.Node) {
 		pts = append(pts, w.th.Nodes[id])
 	}
 	return append(pts, st.Point)
@@ -335,11 +342,23 @@ func (w *World) move(now time.Time) {
 		dt = math.Min(math.Max(now.Sub(w.lastNow).Seconds(), 0), maxStep.Seconds())
 	}
 	w.lastNow = now
-	for id := range w.bodies {
+	leads := map[string]string{}
+	worn := map[string]bool{}
+	for id, a := range w.actors {
+		if a.Lead && a.Character != "" {
+			leads[id], worn[a.Character] = a.Character, true
+		}
+	}
+	left := map[string]theme.Point{}
+	for id, b := range w.bodies {
 		if _, ok := w.assign[id]; !ok {
+			if c := w.worn[id]; c != "" && !worn[c] {
+				left[c] = b.pos
+			}
 			delete(w.bodies, id)
 		}
 	}
+	w.worn = leads
 	var newcomers []string
 	for id := range w.assign {
 		if w.bodies[id] == nil {
@@ -348,8 +367,15 @@ func (w *World) move(now time.Time) {
 	}
 	sort.Strings(newcomers)
 	for i, id := range newcomers {
-		w.bodies[id] = &body{pos: w.th.Nodes[w.th.Entrance], wait: float64(i) * entryStagger}
+		b := &body{pos: w.th.Nodes[w.th.Entrance], wait: float64(i) * entryStagger}
+		if s := w.idle[leads[id]]; s != nil { // it was standing about: set off from there
+			b.pos, b.wait = s.pos, 0
+			delete(w.idle, leads[id])
+		}
+		w.bodies[id] = b
 	}
+	w.muster(worn, left)
+	w.stroll(dt)
 	for id, b := range w.bodies {
 		st := w.assign[id]
 		goal, dest := st, w.station[st]
@@ -365,33 +391,38 @@ func (w *World) move(now time.Time) {
 			b.wait = math.Max(b.wait-dt, 0)
 			continue
 		}
-		remaining := walkSpeed * math.Max(w.aspect, 1) * dt // widths are short on an upright ship
-		moved := false
-		for remaining > 0 && len(b.path) > 0 {
-			next := b.path[0]
-			d := w.dist(b.pos, next)
-			if dx, dy := next.X-b.pos.X, next.Y-b.pos.Y; d > 0 {
-				if math.Abs(dx) >= math.Abs(dy*w.aspect) {
-					b.facing = map[bool]int{true: 2, false: 1}[dx > 0]
-				} else {
-					b.facing = map[bool]int{true: 0, false: 3}[dy > 0]
-				}
-			}
-			if d <= remaining {
-				b.pos, b.path = next, b.path[1:]
-				remaining -= d
-			} else {
-				f := remaining / d
-				b.pos = theme.Point{X: b.pos.X + (next.X-b.pos.X)*f, Y: b.pos.Y + (next.Y-b.pos.Y)*f}
-				remaining = 0
-			}
-			moved = true
-		}
-		if len(b.path) == 0 && moved {
-			b.facing = 0 // arrived: face the viewer
-		}
-		b.phase += dt * stepsPerSec
+		w.step(b, walkSpeed, dt)
 	}
+}
+
+// step moves a body along its path for dt seconds.
+func (w *World) step(b *body, speed, dt float64) {
+	remaining := speed * math.Max(w.aspect, 1) * dt // widths are short on an upright ship
+	moved := false
+	for remaining > 0 && len(b.path) > 0 {
+		next := b.path[0]
+		d := w.dist(b.pos, next)
+		if dx, dy := next.X-b.pos.X, next.Y-b.pos.Y; d > 0 {
+			if math.Abs(dx) >= math.Abs(dy*w.aspect) {
+				b.facing = map[bool]int{true: 2, false: 1}[dx > 0]
+			} else {
+				b.facing = map[bool]int{true: 0, false: 3}[dy > 0]
+			}
+		}
+		if d <= remaining {
+			b.pos, b.path = next, b.path[1:]
+			remaining -= d
+		} else {
+			f := remaining / d
+			b.pos = theme.Point{X: b.pos.X + (next.X-b.pos.X)*f, Y: b.pos.Y + (next.Y-b.pos.Y)*f}
+			remaining = 0
+		}
+		moved = true
+	}
+	if len(b.path) == 0 && moved {
+		b.facing = 0 // arrived: face the viewer
+	}
+	b.phase += dt * stepsPerSec
 }
 
 // Target returns the station an agent is assigned to.
@@ -442,5 +473,5 @@ func (w *World) Placed() []Placed {
 		}
 		out = append(out, p)
 	}
-	return out
+	return append(out, w.strollers()...)
 }

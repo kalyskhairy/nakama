@@ -23,3 +23,15 @@ func TestLoadCastAndHeights(t *testing.T) {
 		}
 	}
 }
+
+func TestCorridorNeedsExistingNodes(t *testing.T) {
+	th, err := Load(write(t, func(m map[string]any) { m["corridor"] = []string{"a", "b"} }))
+	if err != nil || len(th.Corridor) != 2 {
+		t.Fatalf("%v", err)
+	}
+	for _, bad := range [][]string{{"a"}, {"a", "nope"}} {
+		if _, err := Load(write(t, func(m map[string]any) { m["corridor"] = bad })); err == nil {
+			t.Errorf("%v accepted", bad)
+		}
+	}
+}

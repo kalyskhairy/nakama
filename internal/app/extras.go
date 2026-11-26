@@ -105,7 +105,7 @@ func (m *Model) actorAt(col, row int) string {
 	hit, front := "", -1.0
 	for _, p := range m.world.Placed() {
 		b := m.views[m.view].r.Bounds(p, l.ImgW, l.ImgH, l.Scale)
-		if b.Overlaps(imageRect(x, y, cw, ch)) && p.P.Y > front {
+		if !p.Idle && b.Overlaps(imageRect(x, y, cw, ch)) && p.P.Y > front {
 			hit, front = p.ID, p.P.Y
 		}
 	}

@@ -126,6 +126,7 @@ Koordinat `x` dan `y` adalah pecahan 0..1 dari gambar latar; titiknya adalah pos
 | `agentTypes` | jenis agen → karakter; `default` wajib |
 | `sessionCharacters` | opsional: satu karakter per sesi; yang pertama selalu dipakai lebih dulu |
 | `heights` | opsional: tinggi per karakter (1 = biasa) |
+| `corridor` | opsional: node lorong (minimal 2, berurutan); karakter `sessionCharacters` yang tidak dipakai sesi nongkrong dan jalan-jalan di situ |
 | `nodes`, `edges`, `entrance` | jalur yang dilewati karakter; semua node harus tersambung |
 | `stations` | tempat `work` atau `rest`; `for` berisi nama karakter atau jenis agen yang diutamakan |
 

@@ -36,6 +36,10 @@
     ]
   ],
   "entrance": "entrance",
+  "corridor": [
+    "entrance",
+    "hall"
+  ],
   "stations": [
     {
       "id": "kitchen",
