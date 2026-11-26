@@ -144,6 +144,8 @@ type Model struct {
 	view       int
 	world      *scene.World
 	actors     []scene.Actor
+	crewArea   workspace.Rect  // the crew list on the office screen
+	crewIDs    []string        // the agent of each of its lines under the header
 	roots      func() []string // transcript roots, for usage and search
 	background func(work func() func())
 	report     *history.Report

@@ -368,7 +368,7 @@ func (m *Model) chatEvent(ev input.Event, now time.Time) {
 		}
 		return
 	}
-	if m.inOffice && ev.Press && ev.Btn == 0 && m.actorAt(ev.X, ev.Y) != "" {
+	if m.inOffice && ev.Press && ev.Btn == 0 && m.agentAt(ev.X, ev.Y) != "" {
 		m.leaveChat()
 		m.homeEvent(ev, now)
 		return
@@ -558,7 +558,7 @@ func (m *Model) workMouse(ev input.Event, now time.Time) {
 func (m *Model) homeEvent(ev input.Event, now time.Time) {
 	if ev.Kind != input.EvKey {
 		if ev.Press && ev.Btn == 0 {
-			if id := m.actorAt(ev.X, ev.Y); id != "" {
+			if id := m.agentAt(ev.X, ev.Y); id != "" {
 				m.selected = id
 				m.talk(now)
 				return

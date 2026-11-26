@@ -40,7 +40,8 @@ func main() {
 	dir := flag.String("dir", ".", "folder the new-session picker offers first")
 	prefix := flag.Int("prefix", 0, "byte of the focus key between chat and lists (0 = Ctrl+Space, 0x1d = Ctrl+])")
 	offline := flag.Bool("offline", false, "never ask the network for plan limits")
-	notify := flag.Bool("notify", true, "bell and Windows notification when a session waits or finishes")
+	notify := allNotices()
+	flag.Var(notify, "notify", "bell and Windows notification for: all, none, or a list of waiting,finished,context")
 	window := flag.Int("context-window", 200000, "context window (tokens) used for the context percentage")
 	themeName := flag.String("theme", "default", "office theme (a folder in the themes directory)")
 	themesDir := flag.String("themes-dir", defaultThemesDir(), "where the office themes live")
@@ -268,11 +269,16 @@ func main() {
 				if frame != "" { // shown in one go by terminals that know synchronized output; ignored by others
 					os.Stdout.WriteString(ansi.SetModeSynchronizedOutput + frame + ansi.ResetModeSynchronizedOutput)
 				}
-				if *notify && len(notices) > 0 {
-					os.Stdout.WriteString("\a") // here, so it can not land inside a frame
-					for _, n := range notices {
-						toast(n)
+				rang := false
+				for _, n := range notices {
+					if !notify.on[n.Kind] {
+						continue
 					}
+					if !rang {
+						os.Stdout.WriteString("\a") // here, so it can not land inside a frame
+						rang = true
+					}
+					toast(n)
 				}
 				lastDraw, need = time.Now(), false
 			}

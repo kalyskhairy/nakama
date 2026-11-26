@@ -10,8 +10,20 @@ import (
 	"github.com/kalyskhairy/nakama/internal/monitor"
 )
 
+// NoticeKind names what a notice is about, so the owner can choose which ones to get.
+type NoticeKind string
+
+const (
+	NoticeWaiting  NoticeKind = "waiting"
+	NoticeFinished NoticeKind = "finished"
+	NoticeContext  NoticeKind = "context"
+)
+
 // Notice is something the owner should hear about even when looking elsewhere.
-type Notice struct{ Title, Text string }
+type Notice struct {
+	Title, Text string
+	Kind        NoticeKind
+}
 
 type watch struct {
 	waiting, working bool
@@ -46,11 +58,11 @@ func (m *Model) watchCrew(now time.Time) {
 			continue
 		}
 		next[r.ID] = w
-		say := ""
+		say, kind := "", NoticeFinished
 		switch st {
 		case monitor.Waiting:
 			if !w.waiting {
-				say = "is waiting for you"
+				say, kind = "is waiting for you", NoticeWaiting
 			}
 			w.quietSince = time.Time{}
 		case monitor.Working:
@@ -71,13 +83,13 @@ func (m *Model) watchCrew(now time.Time) {
 		switch {
 		case in.CtxPct >= ctxWarn && !w.full:
 			w.full = true
-			m.notices = append(m.notices, Notice{Title: fmt.Sprintf("%s: context %d%% full", who, in.CtxPct), Text: r.Title + " — consider /compact or a new session"})
+			m.notices = append(m.notices, Notice{Title: fmt.Sprintf("%s: context %d%% full", who, in.CtxPct), Text: r.Title + " — consider /compact or a new session", Kind: NoticeContext})
 		case in.CtxPct >= 0 && in.CtxPct < ctxCalm:
 			w.full = false
 		}
 		beingUsed := m.mode == input.Chat && m.selectedID(now) == r.ID && now.Sub(m.lastTyped) < attended
 		if say != "" && !beingUsed {
-			m.notices = append(m.notices, Notice{Title: who + " " + say, Text: r.Title + " — " + say})
+			m.notices = append(m.notices, Notice{Title: who + " " + say, Text: r.Title + " — " + say, Kind: kind})
 		}
 	}
 	m.seen = next
@@ -99,6 +111,22 @@ func (m *Model) visiting(id string, in monitor.Info, now time.Time) string {
 	for _, p := range m.procs {
 		if p.Name == name && p.SessionID != id {
 			return p.SessionID
+		}
+	}
+	return ""
+}
+
+// agentAt is the agent a click on the office screen points at: a character on the ship, or a line
+// of the crew list.
+func (m *Model) agentAt(col, row int) string {
+	if id := m.actorAt(col, row); id != "" {
+		return id
+	}
+	if m.officeShown() && m.drewOffice && m.crewArea.Contains(col, row) {
+		if i := row - m.crewArea.Y - 1; i >= 0 && i < len(m.crewIDs) {
+			if _, ok := m.owner[m.crewIDs[i]]; ok {
+				return m.crewIDs[i]
+			}
 		}
 	}
 	return ""

@@ -55,6 +55,12 @@ const (
 func (m *Model) crewLines(width, height int, now time.Time) []string {
 	rows := m.crewRows(now)
 	var list []string
+	var ids []string // the agent each list line is about
+	own := func(id string) {
+		for len(ids) < len(list) {
+			ids = append(ids, id)
+		}
+	}
 	sel := 0 // the list line of the selected agent
 	side := width >= 2*cardW
 	footW := width
@@ -85,6 +91,7 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 		if in.PendingTool != "" && (r.State == ui.StateWorking || r.State == ui.StateWaiting) {
 			list = append(list, "    tool: "+in.PendingTool)
 		}
+		own(r.ID)
 		if !untracked(r.ID) {
 			for _, sub := range m.mon.Subagents(r.ID, now) {
 				mark := " "
@@ -101,6 +108,7 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 					st = ui.StateActive
 				}
 				list = append(list, fmt.Sprintf("%s  └%s %s · %s", mark, ui.Glyph(st), sub.Type, sub.Description))
+				own("sub:" + r.ID + ":" + sub.ID)
 			}
 		}
 	}
@@ -126,8 +134,9 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 	}
 	room = max(room, 0)
 	if first := min(sel, len(list)-room); first > 0 { // scroll so the selected one stays in sight
-		list = list[first:]
+		list, ids = list[first:], ids[first:]
 	}
+	m.crewIDs = ids[:min(len(ids), room)]
 	list = append(list, make([]string, max(room-len(list), 0))...)[:room]
 	out := append([]string{fmt.Sprintf(" Crew (%d)", len(rows))}, list...)
 	if side {
@@ -181,6 +190,7 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 		return "", false
 	}
 	m.shipLay = lay
+	m.crewArea = workspace.Rect{}
 	var panel []string
 	panelRow, panelCol := 1, w-side+1
 	switch {
@@ -191,6 +201,13 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 		panel = m.crewLines(side, h-1, now)
 	case below > 0: // one blank row under the picture, for the same reason as the spare row
 		panel, panelRow, panelCol = m.crewLines(w, below, now), rows-below+2, 1
+	}
+	if len(panel) > 0 { // where the list is, for clicks: the card beside it is not part of it
+		width := ansi.StringWidth(panel[0])
+		if width >= 2*cardW {
+			width -= cardW
+		}
+		m.crewArea = workspace.Rect{X: panelCol - 1, Y: panelRow - 1, W: width, H: len(panel)}
 	}
 	placed := m.world.Placed()
 	card := [3]string{" no agent selected (Tab to select)", "", ""}

@@ -19,7 +19,7 @@ that walks, works and sleeps.
 - A usage screen, and search through the conversations of every session.
 - Notifications when a session waits for you or finishes (terminal bell; a Windows notification under WSL).
 - Office (`v`): characters work at their own places, sleep in the rest room, visit the session they
-  message, and the unused ones stroll the corridor. Click a character to open its chat.
+  message, and the unused ones stroll the corridor. Click a character, or its name in the Crew list, to open its chat.
 
 ## Requirements
 
@@ -76,7 +76,7 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
 | `--theme <name>` | office theme (default `default`) |
 | `--graphics auto\|sixel\|off` | office picture |
 | `--font 10x20` | cell size in pixels, if your terminal does not report it |
-| `--notify=false` | no notifications |
+| `--notify=waiting,context` | which notifications: `waiting`, `finished`, `context`; `all` (default) or `none` |
 | `--offline` | never fetch plan limits from the network |
 | `--prefix 0x1d` | replace `Ctrl+Space` (here with `Ctrl+]`) |
 | `--context-window 200000` | used for the context percentage |
