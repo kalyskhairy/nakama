@@ -105,3 +105,15 @@ func TestDefaultThemesDirHonoursXDG(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestWithoutADefaultThemeTheDemoIsUsed(t *testing.T) {
+	dir := t.TempDir()
+	cfg := loadOffice(officeOpts{themeName: "default", themesDir: dir, graphics: "sixel"}, func() bool { return true })
+	if cfg.Reason != "" || cfg.Theme == nil || cfg.Theme.Name != "demo" {
+		t.Fatalf("%q", cfg.Reason)
+	}
+	// a name the owner asked for is never replaced
+	if cfg := loadOffice(officeOpts{themeName: "mine", themesDir: dir, graphics: "sixel"}, func() bool { return true }); cfg.Reason == "" {
+		t.Fatal("a missing named theme must be reported")
+	}
+}

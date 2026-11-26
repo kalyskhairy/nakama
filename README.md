@@ -4,6 +4,8 @@ Several interactive `claude` (Claude Code) sessions in one terminal: every sessi
 their status and context use, and an optional pixel-art "office" where each session is a character
 that walks, works and sleeps.
 
+![The office with the built-in demo theme](assets/office.png)
+
 > A personal project. Unofficial, and not affiliated with Anthropic.
 
 ## Features
@@ -85,9 +87,10 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
   version may change them.
 - Session titles appear in notifications, so mind that when sharing your screen.
 
-## Office themes (bring your own)
+## Office themes
 
-This repository **ships no artwork**. Make a theme in `~/.config/nakama/themes/default/`
+Until you make your own, nakama draws a small **demo theme** (the picture above) into
+`~/.config/nakama/themes/demo/`. To use your own, make it in `~/.config/nakama/themes/default/`
 (or another name, used with `--theme`):
 
 ```

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/kalyskhairy/nakama/internal/app"
+	"github.com/kalyskhairy/nakama/internal/demo"
 	"github.com/kalyskhairy/nakama/internal/office"
 	"github.com/kalyskhairy/nakama/internal/theme"
 
@@ -39,7 +40,14 @@ func loadOffice(o officeOpts, hasSixel func() bool) *app.OfficeConfig {
 	if o.graphics == "off" {
 		return fail("graphics turned off (--graphics off)")
 	}
-	th, err := theme.Load(filepath.Join(o.themesDir, o.themeName))
+	dir := filepath.Join(o.themesDir, o.themeName)
+	if _, err := os.Stat(dir); os.IsNotExist(err) && o.themeName == "default" { // no theme of their own yet
+		dir = filepath.Join(o.themesDir, "demo")
+		if err := demo.Write(dir); err != nil {
+			return fail("demo theme: %v", err)
+		}
+	}
+	th, err := theme.Load(dir)
 	if err != nil {
 		return fail("theme %q: %v", o.themeName, err)
 	}
