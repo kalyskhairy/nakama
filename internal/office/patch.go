@@ -87,7 +87,7 @@ func (r *Renderer) Palette() (color.Palette, error) {
 			}
 		}
 	}
-	for _, c := range []color.NRGBA{selectColor, markColor['?'], markColor['✓'], markColor['z'], markColor['m']} {
+	for _, c := range []color.NRGBA{selectColor, markColor['?'], markColor['✓'], markColor['z'], markColor['m'], markColor['!']} {
 		if !seen[c] && len(r.pal) < 255 {
 			r.pal = append(r.pal, c)
 		}

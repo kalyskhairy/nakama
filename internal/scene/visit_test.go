@@ -39,3 +39,18 @@ func TestAVisitorWalksToTheOtherAndBack(t *testing.T) {
 		t.Fatalf("did not go back: %v %v", at("a").P, home)
 	}
 }
+
+func TestAFullContextShowsAMarkUnlessSomethingElseDoes(t *testing.T) {
+	w := NewWorld(testTheme())
+	a := lead("a", Working, t0)
+	a.Full = true
+	w.Update([]Actor{a}, t0)
+	if m := w.Placed()[0].Mark; m != '!' {
+		t.Fatalf("mark %q", m)
+	}
+	a.Status = Waiting
+	w.Update([]Actor{a}, t0)
+	if m := w.Placed()[0].Mark; m != '?' {
+		t.Fatalf("waiting comes first: %q", m)
+	}
+}

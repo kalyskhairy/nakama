@@ -729,7 +729,7 @@ func (m *Model) Tick(now time.Time) {
 		key := r.ID
 		in := m.info(key, now)
 		st := sceneStatus(in.Status, false)
-		actors = append(actors, scene.Actor{ID: key, Type: "session", Title: r.Title, Status: st, LastActive: in.LastActive, Lead: true, Character: m.cast[key], Visit: m.visiting(key, in, now)})
+		actors = append(actors, scene.Actor{ID: key, Type: "session", Title: r.Title, Status: st, LastActive: in.LastActive, Lead: true, Character: m.cast[key], Visit: m.visiting(key, in, now), Full: in.CtxPct >= ctxWarn})
 		role := "session lead"
 		if name := charName(m.cast[key]); name != "" {
 			role += " · " + name

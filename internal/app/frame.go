@@ -72,6 +72,9 @@ func (m *Model) crewLines(width, height int, now time.Time) []string {
 		}
 		list = append(list, fmt.Sprintf("%s%s %s[%s] %s", mark, ui.Glyph(r.State), who, r.Account, r.Folder), "    "+r.Title)
 		in := m.info(r.ID, now)
+		if in.CtxPct >= ctxWarn {
+			list = append(list, fmt.Sprintf("    ! context %d%% full", in.CtxPct))
+		}
 		if to := m.visiting(r.ID, in, now); to != "" {
 			name := charName(m.cast[to])
 			if name == "" {

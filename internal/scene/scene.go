@@ -26,6 +26,7 @@ type Actor struct {
 	LastActive      time.Time
 	Lead            bool
 	Character       string // empty = chosen by Type
+	Full            bool   // its context is nearly full
 	Visit           string // id of an actor it is talking to: it walks there, and both get a bubble
 }
 
@@ -461,6 +462,9 @@ func (w *World) Placed() []Placed {
 			p.Anim, p.Frame = Work, int(b.phase)%4
 		case a.Status == Idle:
 			p.Anim, p.Frame, p.Mark = Sleep, int(b.phase/2)%2, 'z'
+		}
+		if a.Full {
+			p.Mark = '!'
 		}
 		switch a.Status {
 		case Waiting:

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"image"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ type Notice struct{ Title, Text string }
 
 type watch struct {
 	waiting, working bool
+	full             bool      // warned that its context is filling up
 	quietSince       time.Time // when a working session stopped
 }
 
@@ -21,6 +23,8 @@ const (
 	finishedAfter = 3 * time.Second // shorter pauses are just the gap between two tools
 	attended      = 30 * time.Second
 	visitFor      = 25 * time.Second
+	ctxWarn       = 80 // per cent of the context window
+	ctxCalm       = 70 // below this a new warning is due next time
 )
 
 // TakeNotices hands over the notices gathered since the last call.
@@ -34,10 +38,11 @@ func (m *Model) TakeNotices() []Notice {
 func (m *Model) watchCrew(now time.Time) {
 	next := map[string]*watch{}
 	for _, r := range m.crewRows(now) {
-		st := m.info(r.ID, now).Status
+		in := m.info(r.ID, now)
+		st := in.Status
 		w, known := m.seen[r.ID]
 		if !known {
-			next[r.ID] = &watch{waiting: st == monitor.Waiting, working: st == monitor.Working}
+			next[r.ID] = &watch{waiting: st == monitor.Waiting, working: st == monitor.Working, full: in.CtxPct >= ctxWarn}
 			continue
 		}
 		next[r.ID] = w
@@ -59,12 +64,19 @@ func (m *Model) watchCrew(now time.Time) {
 			}
 		}
 		w.waiting = st == monitor.Waiting
+		who := r.Folder
+		if name := charName(m.cast[r.ID]); name != "" {
+			who = name + " · " + who
+		}
+		switch {
+		case in.CtxPct >= ctxWarn && !w.full:
+			w.full = true
+			m.notices = append(m.notices, Notice{Title: fmt.Sprintf("%s: context %d%% full", who, in.CtxPct), Text: r.Title + " — consider /compact or a new session"})
+		case in.CtxPct >= 0 && in.CtxPct < ctxCalm:
+			w.full = false
+		}
 		beingUsed := m.mode == input.Chat && m.selectedID(now) == r.ID && now.Sub(m.lastTyped) < attended
 		if say != "" && !beingUsed {
-			who := r.Folder
-			if name := charName(m.cast[r.ID]); name != "" {
-				who = name + " · " + who
-			}
 			m.notices = append(m.notices, Notice{Title: who + " " + say, Text: r.Title + " — " + say})
 		}
 	}

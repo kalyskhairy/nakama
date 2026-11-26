@@ -26,6 +26,7 @@ func HelpLines(width int) []string {
 	add("", "Marks",
 		"  ?  needs your approval or answer     ●  working     ◐  active     ○  idle     ✓  done",
 		"  In the office, dim blue characters are subagents; full colour ones are chat sessions.",
+		"  !  context 80% full or more: consider /compact or a new session",
 		"  (other terminal)  the session is in use elsewhere: view only, never resumed",
 		"  just active  the transcript changed seconds ago with no known process: Enter asks to confirm",
 		"",

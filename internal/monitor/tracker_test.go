@@ -104,6 +104,10 @@ func TestContextPctUsesLastAssistantMessage(t *testing.T) {
 		t.Fatalf("%+v", in)
 	}
 	k.Apply([]tr.Event{asst("m3", t0, tr.Usage{Input: 900000})}, t0)
+	if got := k.Info(t0).CtxPct; got != 90 { // more than the window set: it is a million-token model
+		t.Fatalf("large window: %d", got)
+	}
+	k.Apply([]tr.Event{asst("m4", t0, tr.Usage{Input: 1200000})}, t0)
 	if got := k.Info(t0).CtxPct; got != 100 {
 		t.Fatalf("cap: %d", got)
 	}
@@ -152,5 +156,20 @@ func TestActivityKeepsLast50(t *testing.T) {
 	got := tracker(evs...).Activity()
 	if len(got) != 50 || got[0].Text != "tool: Tool59" || got[49].Text != "tool: Tool10" {
 		t.Fatalf("len %d first %q last %q", len(got), got[0].Text, got[len(got)-1].Text)
+	}
+}
+
+func TestAContextBeyondTheWindowMeansABiggerWindow(t *testing.T) {
+	tk := NewTracker(200000)
+	say := func(id string, n int) {
+		tk.Apply([]tr.Event{{Kind: tr.Assistant, MessageID: id, Usage: tr.Usage{CacheRead: n}}}, time.Now())
+	}
+	say("a", 300000)
+	if got := tk.Info(time.Now()).CtxPct; got != 30 {
+		t.Fatalf("%d%%, want 30%% of a million", got)
+	}
+	say("b", 100000) // after a compaction it is still that model
+	if got := tk.Info(time.Now()).CtxPct; got != 10 {
+		t.Fatalf("%d%%", got)
 	}
 }

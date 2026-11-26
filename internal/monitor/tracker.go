@@ -31,6 +31,7 @@ type Info struct {
 
 const (
 	defaultWindow = 200000
+	largeWindow   = 1000000
 	waitAfter     = 3 * time.Second
 	waitUntil     = time.Hour
 	workingFor    = 2 * time.Minute
@@ -136,6 +137,9 @@ func (t *Tracker) Apply(events []tr.Event, now time.Time) {
 				t.model = e.Model
 			}
 			t.ctx, t.haveCtx = e.Usage.Input+e.Usage.CacheCreate+e.Usage.CacheRead, true
+			if t.ctx > t.window {
+				t.window = max(t.ctx, largeWindow) // it cannot hold more than its window: this one is the large kind
+			}
 			if e.MessageID != "" && !t.counted[e.MessageID] {
 				t.counted[e.MessageID] = true
 				t.record(e.Time, now, "reply")
