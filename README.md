@@ -1,5 +1,7 @@
 # nakama
 
+[![test](https://github.com/kalyskhairy/nakama/actions/workflows/test.yml/badge.svg)](https://github.com/kalyskhairy/nakama/actions/workflows/test.yml)
+
 Several interactive `claude` (Claude Code) sessions in one terminal: every session of every folder,
 their status and context use, and an optional pixel-art "office" where each session is a character
 that walks, works and sleeps.
