@@ -189,6 +189,11 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 	if !ok {
 		return "", false
 	}
+	if hasChat && cl.crew.X == 0 { // two columns: the ship goes to the top, the crew gets what is left
+		lay.Row = 1
+		cl.crew.Y = lay.Rows + 1 // one blank row under the picture
+		cl.crew.H = h - 1 - cl.crew.Y
+	}
 	m.shipLay = lay
 	m.crewArea = workspace.Rect{}
 	var panel []string
