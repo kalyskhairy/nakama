@@ -1,5 +1,5 @@
-// Package demo is the theme nakama shows before the owner has made one: an original guild house and
-// crew, AI-generated for this project (see art/).
+// Package demo is a small office theme shipped with nakama, so the office works before the owner has
+// made a theme. Its artwork is original, made with an AI image generator.
 package demo
 
 import (
@@ -9,25 +9,30 @@ import (
 	"path/filepath"
 )
 
-//go:embed art
-var art embed.FS
+//go:embed theme
+var files embed.FS
 
-// Write puts the demo theme in dir. A theme that is already there is left alone.
+// version changes whenever the artwork does, so an older copy on disk is replaced.
+const version = "2"
+
+// Write puts the demo theme in dir. A copy of this version that is already there is left alone.
 func Write(dir string) error {
-	if _, err := os.Stat(filepath.Join(dir, "theme.json")); err == nil {
-		return nil
+	if b, err := os.ReadFile(filepath.Join(dir, ".version")); err == nil && string(b) == version {
+		if _, err := os.Stat(filepath.Join(dir, "theme.json")); err == nil {
+			return nil
+		}
 	}
-	files, _ := fs.Sub(art, "art")
-	err := fs.WalkDir(files, ".", func(p string, d fs.DirEntry, err error) error {
-		if err != nil || p == "theme.json" { // written last: it marks the theme as complete
+	os.RemoveAll(filepath.Join(dir, "sprites")) // an older demo's frames
+	err := fs.WalkDir(files, "theme", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || p == "theme/theme.json" {
 			return err
 		}
-		out := filepath.Join(dir, filepath.FromSlash(p))
-		if d.IsDir() {
-			return os.MkdirAll(out, 0o755)
-		}
-		b, err := fs.ReadFile(files, p)
+		b, err := files.ReadFile(p)
 		if err != nil {
+			return err
+		}
+		out := filepath.Join(dir, filepath.FromSlash(p[len("theme/"):]))
+		if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 			return err
 		}
 		return os.WriteFile(out, b, 0o644)
@@ -35,9 +40,12 @@ func Write(dir string) error {
 	if err != nil {
 		return err
 	}
-	b, err := fs.ReadFile(files, "theme.json")
+	b, err := files.ReadFile("theme/theme.json")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "theme.json"), b, 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "theme.json"), b, 0o644); err != nil { // last: marks the theme complete
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, ".version"), []byte(version), 0o644)
 }
