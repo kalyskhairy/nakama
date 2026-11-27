@@ -21,8 +21,11 @@ func runTheme(args []string) error {
 	if len(args) > 0 && args[0] == "preview" {
 		return runPreview(args[1:])
 	}
+	if len(args) > 0 && args[0] == "record" {
+		return runRecord(args[1:])
+	}
 	if len(args) == 0 || args[0] != "import-sheet" {
-		return fmt.Errorf("usage: nakama theme import-sheet --sheet <png> --theme <dir> --name <character> [--height 64]\n       nakama theme preview --theme <dir> [--out preview.png]")
+		return fmt.Errorf("usage: nakama theme import-sheet --sheet <png> --theme <dir> --name <character> [--height 64]\n       nakama theme preview --theme <dir> [--out preview.png]\n       nakama theme record --theme <dir|demo> [--out office.gif] [--seconds 10] [--width 768]")
 	}
 	fs := flag.NewFlagSet("import-sheet", flag.ContinueOnError)
 	sheet := fs.String("sheet", "", "sprite sheet (PNG, magenta background, 6 rows)")

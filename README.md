@@ -6,7 +6,7 @@ Several interactive `claude` (Claude Code) sessions in one terminal: every sessi
 their status and context use, and an optional pixel-art "office" where each session is a character
 that walks, works and sleeps.
 
-![The office with the built-in demo theme](assets/office.png)
+![The office with the built-in demo theme](assets/office.gif)
 
 > A personal project. Unofficial, and not affiliated with Anthropic.
 
@@ -149,6 +149,12 @@ You need at least one `work` and one `rest` station.
 
 ```sh
 nakama theme preview --theme ~/.config/nakama/themes/default --out preview.png
+```
+
+To film a theme as an animated GIF (a short scripted scene, like the one at the top):
+
+```sh
+nakama theme record --theme ~/.config/nakama/themes/default --out office.gif
 ```
 
 Make sure you have the right to use the artwork you put in.
