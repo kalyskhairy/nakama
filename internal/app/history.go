@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -78,35 +80,52 @@ func (m *Model) usageLines(now time.Time) []string {
 	for _, n := range m.report.Days {
 		most = max(most, n)
 	}
+	week := map[string]history.Use{}
 	for i := usageDays - 1; i >= 0; i-- {
-		day := now.AddDate(0, 0, -i)
-		n := m.report.Days[day.Format("2006-01-02")]
-		out = append(out, fmt.Sprintf("  %s  %10s  %s", day.Format("Mon 02 Jan"), ui.Tokens(n), strings.Repeat("█", n*30/most)))
+		day := now.AddDate(0, 0, -i).Format("2006-01-02")
+		n := m.report.Days[day]
+		out = append(out, fmt.Sprintf("  %s  %10s  %9s  %s", now.AddDate(0, 0, -i).Format("Mon 02 Jan"), ui.Tokens(n), dollars(m.report.Costs[day]), strings.Repeat("█", n*30/most)))
+		for a, u := range m.report.Accounts[day] {
+			w := week[a]
+			week[a] = history.Use{Tokens: w.Tokens + u.Tokens, Cost: w.Cost + u.Cost}
+		}
 	}
+	byAccount := func(title string, uses map[string]history.Use) {
+		var names []string
+		for a := range uses {
+			names = append(names, a)
+		}
+		sort.Strings(names)
+		out = append(out, "", title)
+		for _, a := range names {
+			out = append(out, fmt.Sprintf("  %-10s %10s  %9s", a, ui.Tokens(uses[a].Tokens), dollars(uses[a].Cost)))
+		}
+		if len(names) == 0 {
+			out = append(out, "  nothing yet")
+		}
+	}
+	byAccount("Today by account", m.report.Accounts[now.Format("2006-01-02")])
+	byAccount(fmt.Sprintf("Last %d days by account", usageDays), week)
 	today := m.report.Sessions(now.Format("2006-01-02"))
-	byAccount := map[string]int{}
-	for _, s := range today {
-		byAccount[s.Account] += s.Tokens
-	}
-	var accounts []string
-	for a := range byAccount {
-		accounts = append(accounts, a)
-	}
-	sort.Strings(accounts)
-	out = append(out, "", "Today by account")
-	for _, a := range accounts {
-		out = append(out, fmt.Sprintf("  %-10s %10s", a, ui.Tokens(byAccount[a])))
-	}
 	out = append(out, "", "Today by session")
 	for _, s := range today[:min(len(today), usageTop)] {
 		folder, title := m.title(now, s.ID, s.Cwd)
-		out = append(out, fmt.Sprintf("  %10s  [%s] %s · %s", ui.Tokens(s.Tokens), s.Account, folder, title))
+		out = append(out, fmt.Sprintf("  %10s  %9s  [%s] %s · %s", ui.Tokens(s.Tokens), dollars(s.Cost), s.Account, folder, title))
 	}
 	if len(today) == 0 {
 		out = append(out, "  nothing yet")
 	}
-	return append(out, "", "Tokens = input + cache writes + output. ↑/↓ scroll, esc closes.")
+	out = append(out, "", "Tokens = input + cache writes + output.",
+		"Cost = what these tokens would cost on the API at list prices (cache reads included).",
+		"A Claude subscription is billed differently, so this is a comparison, not your bill.")
+	if m.report.Unpriced > 0 {
+		out = append(out, fmt.Sprintf("%s of models without a known price are not in any cost.", ui.Tokens(m.report.Unpriced)))
+	}
+	return append(out, "↑/↓ scroll, esc closes.")
 }
+
+// dollars writes an amount like $12.34.
+func dollars(d float64) string { return fmt.Sprintf("$%.2f", d) }
 
 func (m *Model) openSearch() {
 	m.openOverlay(ovSearch)
@@ -188,4 +207,54 @@ func (m *Model) searchLines(width, height int, now time.Time) []string {
 			"      "+h.Snippet)
 	}
 	return out
+}
+
+// SetHandoffDir says where handoff files go.
+func (m *Model) SetHandoffDir(dir string) { m.handoffDir = dir }
+
+// handoff starts a new session in the folder and account of the selected one, told to read what was
+// said there: a fresh context that still knows the story.
+func (m *Model) handoff(now time.Time) {
+	e, ok := m.entry(now, m.selectedID(now))
+	switch {
+	case !ok:
+		m.say(now, "pick a session first")
+		return
+	case e.Path == "":
+		m.say(now, "this session has no transcript yet: nothing to hand over")
+		return
+	case e.Cwd == "" || !m.statDir(e.Cwd):
+		m.say(now, "the folder of this session is gone: %s", e.Cwd)
+		return
+	}
+	m.say(now, "preparing the handoff…")
+	dir := m.handoffDir
+	m.later(func() func() {
+		file, err := writeHandoff(dir, e, now)
+		return func() {
+			if err != nil {
+				m.say(now, "could not prepare the handoff: %v", err)
+				return
+			}
+			m.mode, m.inOffice = input.Work, false
+			m.newSession(SpawnReq{Dir: e.Cwd, ConfigDir: e.ConfigDir, Prompt: "This session continues an earlier one. Read " + file +
+				": it is what the user and Claude said there (tool output left out). Summarise in a few lines what was done, " +
+				"what was decided and what is still open, then wait for my next instruction."}, now)
+		}
+	})
+}
+
+// writeHandoff writes the conversation of a session to <dir>/<id>.md, readable by the owner only.
+func writeHandoff(dir string, e index.Entry, now time.Time) (string, error) {
+	text, err := history.Conversation(e.Path)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	file := filepath.Join(dir, e.ID+".md")
+	head := fmt.Sprintf("# Handoff from an earlier Claude Code session\n\nSession: %s (%s)\nFolder: %s\nAccount: %s\nWritten by nakama on %s.\n\n",
+		e.Title, e.ID, e.Cwd, e.Account, now.Format("2006-01-02 15:04"))
+	return file, os.WriteFile(file, []byte(head+text), 0o600)
 }

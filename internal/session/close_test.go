@@ -2,12 +2,15 @@ package session
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/charmbracelet/x/vt"
 )
 
 // alive reports a process that still runs (a zombie does not).
@@ -53,12 +56,25 @@ func TestCloseFreesTheEmulator(t *testing.T) {
 }
 
 func TestCloseNeverTouchesAProcessThatTookTheSameNumber(t *testing.T) {
-	s := start(t, nil, "sh", "-c", "sleep 60")
-	pid := s.PID()
-	s.start += "0" // as if the child had ended and another program now had its number
-	s.Close()
-	if !alive(pid) {
+	// a program of its own, in its own terminal session, standing in for one that reused our number
+	other := func() *exec.Cmd {
+		c := exec.Command("sleep", "60")
+		c.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		if err := c.Start(); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { c.Process.Kill(); c.Wait() })
+		return c
+	}
+	session := func(c *exec.Cmd, start string) *Session {
+		return &Session{cmd: c, start: start, wdone: make(chan struct{}), emu: vt.NewSafeEmulator(10, 5)}
+	}
+	c := other()
+	session(c, startTime(c.Process.Pid)+"0").Close()
+	if !alive(c.Process.Pid) {
 		t.Fatal("killed a process that is not ours")
 	}
-	syscall.Kill(pid, syscall.SIGKILL)
+	c = other()
+	session(c, startTime(c.Process.Pid)).Close()
+	waitFor(t, "our own process ended", func() bool { return !alive(c.Process.Pid) })
 }

@@ -53,3 +53,10 @@ func TestLaunchEnvForNonDefaultAccountOnly(t *testing.T) {
 		t.Fatalf("%v", env)
 	}
 }
+
+func TestANewSessionCanStartWithAPrompt(t *testing.T) {
+	args, id, _ := launchArgs("claude", app.SpawnReq{Dir: "/p", Prompt: "read this"})
+	if len(args) != 3 || args[0] != "--session-id" || args[1] != id || args[2] != "read this" {
+		t.Fatalf("%q", args)
+	}
+}

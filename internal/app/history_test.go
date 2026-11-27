@@ -17,7 +17,7 @@ func historyRoot(t *testing.T) string {
 	ts := t0.Add(-time.Hour).UTC().Format(time.RFC3339)
 	os.WriteFile(filepath.Join(root, "-p", "old.jsonl"), []byte(
 		`{"type":"user","timestamp":"`+ts+`","cwd":"/p","message":{"content":"fix the coupon rounding"}}`+"\n"+
-			`{"type":"assistant","timestamp":"`+ts+`","message":{"id":"m","content":[],"usage":{"input_tokens":1500,"output_tokens":500}}}`+"\n"), 0o644)
+			`{"type":"assistant","timestamp":"`+ts+`","message":{"id":"m","model":"claude-opus-5-5","content":[],"usage":{"input_tokens":1500,"output_tokens":500}}}`+"\n"), 0o644)
 	return root
 }
 
@@ -27,7 +27,7 @@ func TestUsageScreen(t *testing.T) {
 	m.SetHistoryRoots(func() []string { return []string{root} })
 	m.HandleEvent(key("u"), t0)
 	f := ansiStrip(Frame(m, 140, 40, t0))
-	for _, want := range []string{"Usage", "Last 7 days", "2.0K tok", "Today by session", "Coupons"} {
+	for _, want := range []string{"Usage", "Last 7 days", "2.0K tok", "Today by session", "Coupons", "$0.02", "Last 7 days by account", "not your bill"} {
 		if !strings.Contains(f, want) {
 			t.Fatalf("no %q in %q", want, f)
 		}

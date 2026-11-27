@@ -28,7 +28,11 @@ func launchArgs(cmd string, r app.SpawnReq) (args []string, id string, env []str
 		return []string{"--resume", r.ResumeID}, r.ResumeID, env
 	}
 	id = newUUID()
-	return []string{"--session-id", id}, id, env
+	args = []string{"--session-id", id}
+	if r.Prompt != "" {
+		args = append(args, r.Prompt)
+	}
+	return args, id, env
 }
 
 func newUUID() string {

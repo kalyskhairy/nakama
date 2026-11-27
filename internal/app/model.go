@@ -33,8 +33,9 @@ const (
 )
 
 // SpawnReq says what to start: a new session in Dir, or ResumeID resumed in Dir. ConfigDir is the
-// config dir of the account that owns the session ("" for the personal account).
-type SpawnReq struct{ Dir, ConfigDir, ResumeID string }
+// config dir of the account that owns the session ("" for the personal account). Prompt, for a new
+// session, is its first message.
+type SpawnReq struct{ Dir, ConfigDir, ResumeID, Prompt string }
 
 type Spawn func(r SpawnReq, w, h int) (*session.Session, error)
 
@@ -147,6 +148,7 @@ type Model struct {
 	crewArea   workspace.Rect  // the crew list on the office screen
 	crewIDs    []string        // the agent of each of its lines under the header
 	roots      func() []string // transcript roots, for usage and search
+	handoffDir string          // where handoff files are written
 	background func(work func() func())
 	report     *history.Report
 	hits       []history.Hit

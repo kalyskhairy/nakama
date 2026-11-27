@@ -22,13 +22,20 @@ type line struct {
 	Timestamp string `json:"timestamp"`
 	Cwd       string `json:"cwd"`
 	IsMeta    bool   `json:"isMeta"`
+	Sidechain bool   `json:"isSidechain"`
 	Message   struct {
 		ID      string          `json:"id"`
+		Model   string          `json:"model"`
 		Content json.RawMessage `json:"content"`
 		Usage   *struct {
-			Input       int `json:"input_tokens"`
-			CacheCreate int `json:"cache_creation_input_tokens"`
-			Output      int `json:"output_tokens"`
+			Input         int `json:"input_tokens"`
+			CacheCreate   int `json:"cache_creation_input_tokens"`
+			CacheRead     int `json:"cache_read_input_tokens"`
+			Output        int `json:"output_tokens"`
+			CacheCreation *struct {
+				Write5m int `json:"ephemeral_5m_input_tokens"`
+				Write1h int `json:"ephemeral_1h_input_tokens"`
+			} `json:"cache_creation"`
 		} `json:"usage"`
 	} `json:"message"`
 }
@@ -105,11 +112,21 @@ func account(root string) string { return limits.AccountName(filepath.Dir(root))
 type SessionUse struct {
 	ID, Account, Cwd string
 	Tokens           int
+	Cost             float64 // dollars at API list prices
+}
+
+// Use is tokens and their cost.
+type Use struct {
+	Tokens int
+	Cost   float64
 }
 
 type Report struct {
-	Days  map[string]int                    // "2006-01-02" -> tokens
-	byDay map[string]map[string]*SessionUse // day -> session id
+	Days     map[string]int                    // "2006-01-02" -> tokens
+	Costs    map[string]float64                // "2006-01-02" -> dollars at API list prices
+	Accounts map[string]map[string]Use         // day -> account -> use
+	Unpriced int                               // tokens of models without a price, left out of every cost
+	byDay    map[string]map[string]*SessionUse // day -> session id
 }
 
 // Sessions lists who used tokens on a day, the heaviest first.
@@ -130,7 +147,7 @@ func (r Report) Sessions(day string) []SessionUse {
 // Usage adds up the tokens (input, cache writes and output, like the rest of nakama) since a time.
 // A message counts once, however many lines or files repeat it.
 func Usage(roots []string, since time.Time, loc *time.Location) Report {
-	r := Report{Days: map[string]int{}, byDay: map[string]map[string]*SessionUse{}}
+	r := Report{Days: map[string]int{}, Costs: map[string]float64{}, Accounts: map[string]map[string]Use{}, byDay: map[string]map[string]*SessionUse{}}
 	y, mon, d := since.In(loc).Date()
 	since = time.Date(y, mon, d, 0, 0, 0, 0, loc) // whole days
 	seen := map[string]bool{}
@@ -151,16 +168,33 @@ func Usage(roots []string, since time.Time, loc *time.Location) Report {
 				seen[l.Message.ID] = true
 				u := l.Message.Usage
 				n, day := u.Input+u.CacheCreate+u.Output, at.In(loc).Format("2006-01-02")
+				w5, w1 := u.CacheCreate, 0
+				if c := u.CacheCreation; c != nil && c.Write5m+c.Write1h == u.CacheCreate {
+					w5, w1 = c.Write5m, c.Write1h
+				}
+				dollars, priced := cost(l.Message.Model, u.Input, w5, w1, u.CacheRead, u.Output)
+				if !priced {
+					r.Unpriced += n
+				}
+				acct := account(root)
 				r.Days[day] += n
+				r.Costs[day] += dollars
+				if r.Accounts[day] == nil {
+					r.Accounts[day] = map[string]Use{}
+				}
+				a := r.Accounts[day][acct]
+				a.Tokens, a.Cost = a.Tokens+n, a.Cost+dollars
+				r.Accounts[day][acct] = a
 				if r.byDay[day] == nil {
 					r.byDay[day] = map[string]*SessionUse{}
 				}
 				s := r.byDay[day][session]
 				if s == nil {
-					s = &SessionUse{ID: session, Account: account(root), Cwd: l.Cwd}
+					s = &SessionUse{ID: session, Account: acct, Cwd: l.Cwd}
 					r.byDay[day][session] = s
 				}
 				s.Tokens += n
+				s.Cost += dollars
 			})
 		})
 	}

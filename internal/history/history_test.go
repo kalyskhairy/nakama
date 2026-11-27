@@ -1,6 +1,7 @@
 package history
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -65,5 +66,28 @@ func TestSearchFindsWhatWasSaidNotTheMachinery(t *testing.T) {
 	}
 	if len(Search([]string{root}, "  ", 10)) != 0 || len(Search([]string{root}, "coupon", 1)) != 1 {
 		t.Fatal("blank query or limit")
+	}
+}
+
+func TestUsageAddsUpCostPerDayAndAccount(t *testing.T) {
+	home := t.TempDir()
+	msg := func(root, ts, id, model, usage string) {
+		put(t, root, "-p/"+id+".jsonl", `{"type":"assistant","timestamp":"`+ts+`","message":{"id":"`+id+`","model":"`+model+`","content":[],"usage":`+usage+`}}`)
+	}
+	personal := filepath.Join(home, ".claude", "projects")
+	work := filepath.Join(home, ".claude-work", "projects")
+	// 1M input + 1M one-hour writes on Opus 5.5: 4 + 8 dollars
+	msg(personal, "2026-03-10T09:00:00Z", "a", "claude-opus-5-5",
+		`{"input_tokens":1000000,"cache_creation_input_tokens":1000000,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":1000000},"output_tokens":0}`)
+	msg(work, "2026-03-10T09:00:00Z", "b", "<synthetic>", `{"input_tokens":7,"output_tokens":0}`)
+	r := Usage([]string{personal, work}, now.AddDate(0, 0, -6), time.UTC)
+	if c := r.Costs["2026-03-10"]; math.Abs(c-12) > 1e-9 {
+		t.Fatalf("cost %v", c)
+	}
+	if a := r.Accounts["2026-03-10"]; math.Abs(a["personal"].Cost-12) > 1e-9 || a["work"].Tokens != 7 || a["work"].Cost != 0 || r.Unpriced != 7 {
+		t.Fatalf("%+v unpriced %d", a, r.Unpriced)
+	}
+	if s := r.Sessions("2026-03-10"); len(s) != 2 || s[0].ID != "a" || math.Abs(s[0].Cost-12) > 1e-9 {
+		t.Fatalf("%+v", s)
 	}
 }

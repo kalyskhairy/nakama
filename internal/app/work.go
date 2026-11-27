@@ -447,6 +447,8 @@ func (m *Model) workEvent(ev input.Event, now time.Time) {
 		} else {
 			m.say(now, "open a session first (Enter), then zoom")
 		}
+	case "c":
+		m.handoff(now)
 	case "u":
 		m.openUsage(now)
 	case "s":

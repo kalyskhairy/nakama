@@ -155,6 +155,7 @@ func main() {
 	})
 
 	m.SetHistoryRoots(monitor.Roots)
+	m.SetHandoffDir(filepath.Join(filepath.Dir(prefs.DefaultPath()), "handoff"))
 	m.SetBackground(func(work func() func()) { // usage and search read every transcript
 		safeGo(fatal, func() {
 			apply := work()

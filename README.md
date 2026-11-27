@@ -60,6 +60,7 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
 | `Enter` | open a session / chat |
 | `Ctrl+Space` | from the chat back to the lists |
 | `n` | new session |
+| `c` | continue the selected session in a new one (it reads what was said there) |
 | `f` | choose folders |
 | `z` | full screen chat |
 | `v` | office (`f` there: the ship alone, filling the screen) |
