@@ -26,10 +26,10 @@ func Fit(cols, rows, cw, ch, bgW, bgH int) (Layout, bool) {
 	return FitMax(cols, rows, cw, ch, bgW, bgH, 1)
 }
 
-// FitMax is Fit with an upper limit on the scale (0 or less means 1): a smaller picture is cheaper to
-// encode and send every frame.
+// FitMax is Fit with an upper limit on the scale (0 or less means 1). Below 1 the picture is cheaper
+// to encode and send every frame; above 1 it is enlarged.
 func FitMax(cols, rows, cw, ch, bgW, bgH int, maxScale float64) (Layout, bool) {
-	if maxScale <= 0 || maxScale > 1 {
+	if maxScale <= 0 {
 		maxScale = 1
 	}
 	if cols <= 0 || rows <= 0 || cw <= 0 || ch <= 0 || bgW <= 0 || bgH <= 0 {

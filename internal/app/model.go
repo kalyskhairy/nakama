@@ -165,6 +165,7 @@ type Model struct {
 	cast                  map[string]string // session id -> character, kept for as long as nakama runs
 	selected              string
 	cardOpen              bool
+	shipOnly              bool   // the office shows the ship alone, filling the screen
 	drewOffice            bool   // the screen currently holds the office picture
 	lastKey               string // layout of the last office frame; a change clears the screen
 	lastSig               string // everything the last office frame showed; unchanged means nothing is sent
@@ -573,7 +574,7 @@ func (m *Model) orient() {
 	}
 	area := func(v officeView) int {
 		b := v.th.Background.Bounds()
-		l, ok := office.FitMax(cols, rows, m.office.CellW, m.office.CellH, b.Dx(), b.Dy(), m.office.MaxScale)
+		l, ok := office.FitMax(cols, rows, m.office.CellW, m.office.CellH, b.Dx(), b.Dy(), m.maxScale())
 		if !ok {
 			return 0
 		}
@@ -586,6 +587,20 @@ func (m *Model) orient() {
 	if best != m.view {
 		m.view, m.world, m.lastKey = best, scene.NewWorld(m.views[best].th), ""
 	}
+}
+
+// shipOnlyScale is how far the ship may be enlarged when it is shown alone.
+const shipOnlyScale = 2
+
+func (m *Model) maxScale() float64 {
+	s := m.office.MaxScale
+	if s <= 0 {
+		s = 1
+	}
+	if m.shipOnly {
+		s = max(s, shipOnlyScale)
+	}
+	return s
 }
 
 func (m *Model) officeShown() bool {

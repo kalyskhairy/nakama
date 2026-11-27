@@ -62,7 +62,7 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
 | `n` | new session |
 | `f` | choose folders |
 | `z` | full screen chat |
-| `v` | office |
+| `v` | office (`f` there: the ship alone, filling the screen) |
 | `x` | close a finished session |
 | `u` | usage: plan limits, tokens per day, account and session |
 | `s` | search what was said in every session |

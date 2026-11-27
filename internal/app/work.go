@@ -589,6 +589,9 @@ func (m *Model) homeEvent(ev input.Event, now time.Time) {
 		} else {
 			m.say(now, "open a session first (Enter), then zoom")
 		}
+	case "f":
+		m.shipOnly = !m.shipOnly
+		m.orient()
 	case "v", "esc":
 		m.mode, m.inOffice = input.Work, false
 	case "q":
@@ -602,6 +605,10 @@ func (m *Model) talk(now time.Time) {
 	id, ok := m.owner[m.selected]
 	if !ok {
 		return
+	}
+	if m.shipOnly { // a chat needs its panel
+		m.shipOnly = false
+		m.orient()
 	}
 	_, m.inOffice = m.officeLayout(m.w, m.h)
 	m.pane, m.activeKey = workspace.PaneActive, id

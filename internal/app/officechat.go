@@ -30,6 +30,9 @@ type officeRects struct {
 // right; on a tall one, the ship beside the crew above the chat. It reports false when the screen has
 // no room for a chat panel.
 func (m *Model) officeLayout(w, h int) (officeRects, bool) {
+	if m.shipOnly {
+		return officeRects{}, false
+	}
 	switch {
 	case w >= chatCols+70 && h >= 24:
 		cw := max(chatCols, w/2)

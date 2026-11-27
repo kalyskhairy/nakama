@@ -30,6 +30,7 @@ var Bindings = []Binding{
 	{"Office", "Ctrl+Space", "from the chat panel back to picking agents"},
 	{"Office", "z", "full screen chat"},
 	{"Office", "click", "a character or a Crew name: open its chat"},
+	{"Office", "f", "ship only: the picture fills the screen (f again goes back)"},
 	{"Office", "v / esc", "back to three panels"},
 	{"Folder filter", "Space", "show or hide a folder"},
 	{"Folder filter", "a", "show all folders"},

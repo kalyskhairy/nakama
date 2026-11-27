@@ -164,7 +164,7 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 	view := m.views[m.view]
 	bg := view.th.Background.Bounds()
 	fit := func(cols, rows int) (office.Layout, bool) {
-		return office.FitMax(cols, rows, m.office.CellW, m.office.CellH, bg.Dx(), bg.Dy(), m.office.MaxScale)
+		return office.FitMax(cols, rows, m.office.CellW, m.office.CellH, bg.Dx(), bg.Dy(), m.maxScale())
 	}
 	rows := h - 2 // one spare row: sixel bands are padded to 6 px, and cells may be smaller than assumed
 	full, ok := fit(w, rows)
@@ -175,6 +175,10 @@ func (m *Model) officeFrame(w, h int, now time.Time) (string, bool) {
 	cl, hasChat := m.officeLayout(w, h)
 	switch {
 	case hasChat:
+	case m.shipOnly:
+		if m.cardOpen {
+			cardRows = 3
+		}
 	case w-full.Cols >= panelMin:
 		side = min(w-full.Cols, panelMax)
 	case rows-full.Rows >= belowMin:
