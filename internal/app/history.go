@@ -66,8 +66,12 @@ func (m *Model) usageLines(now time.Time) []string {
 			out = append(out, fmt.Sprintf("  %-10s %s", l.Account, l.Err))
 			continue
 		}
-		out = append(out, fmt.Sprintf("  %-10s 5h %3.0f%% (%s)   7d %3.0f%% (%s)", l.Account,
-			l.FiveHour.Pct, resetText(l.FiveHour.ResetsAt, now), l.SevenDay.Pct, resetText(l.SevenDay.ResetsAt, now)))
+		line := fmt.Sprintf("  %-10s 5h %3.0f%% (%s)   7d %3.0f%% (%s)", l.Account,
+			l.FiveHour.Pct, resetText(l.FiveHour.ResetsAt, now), l.SevenDay.Pct, resetText(l.SevenDay.ResetsAt, now))
+		if !l.At.IsZero() && now.Sub(l.At) > staleAfter {
+			line += "   as of " + l.At.In(now.Location()).Format("15:04")
+		}
+		out = append(out, line)
 	}
 	if len(m.limits) == 0 {
 		out = append(out, "  not available")

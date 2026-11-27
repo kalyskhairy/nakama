@@ -27,6 +27,7 @@ type Usage struct {
 	Account            string
 	FiveHour, SevenDay Window
 	Err                string        // empty on success
+	At                 time.Time     // when the figures were fetched
 	retry              time.Duration // how long the server asked us to wait, after a refusal for asking too often
 }
 
@@ -176,27 +177,36 @@ func retryAfter(h string) time.Duration {
 	return min(max(time.Duration(s)*time.Second, time.Minute), 30*time.Minute)
 }
 
-// Poller refreshes all accounts, at most once a minute (or every 10 s for a manual refresh).
+// Poller refreshes all accounts, at most once a minute (or every 10 s for a manual refresh). Pollers
+// that share a file (one per nakama window) ask the server once between them.
 type Poller struct {
 	client  *http.Client
 	baseURL string
 	dirs    []string
 	offline bool
+	shared  string // file the windows share; "" keeps the state in memory only
 
 	fmu    sync.Mutex // one refresh at a time
 	last   time.Time
 	mu     sync.Mutex // guards latest
 	latest []Usage
+	mem    map[string]*check
+}
 
-	good map[string]Usage     // last success per account dir: shown while a later refresh fails
-	held map[string]time.Time // no request for this account dir before then
-	prev map[string]Usage     // last answer per account dir
+// check is what is known about one account dir, the same for every window.
+type check struct {
+	Checked time.Time `json:"checked"`        // when a window last asked the server
+	Held    time.Time `json:"held,omitzero"`  // nobody asks before then: the server said so
+	Err     string    `json:"err,omitempty"`  // of the last request
+	Good    *Usage    `json:"good,omitempty"` // the last figures that came back
 }
 
 func NewPoller(client *http.Client, baseURL string, dirs []string, offline bool) *Poller {
-	return &Poller{client: client, baseURL: baseURL, dirs: dirs, offline: offline,
-		good: map[string]Usage{}, held: map[string]time.Time{}, prev: map[string]Usage{}}
+	return &Poller{client: client, baseURL: baseURL, dirs: dirs, offline: offline, mem: map[string]*check{}}
 }
+
+// Share keeps the state in a file that other nakama windows read and write too.
+func (p *Poller) Share(path string) { p.shared = path }
 
 func (p *Poller) Latest() []Usage {
 	p.mu.Lock()
@@ -220,25 +230,81 @@ func (p *Poller) refresh(ctx context.Context, now time.Time, gap time.Duration) 
 			return
 		}
 		p.last = now
+		state := p.load()
 		for _, d := range p.dirs {
-			u := p.prev[d]
-			if now.After(p.held[d]) || now.Equal(p.held[d]) {
-				u = Fetch(ctx, p.client, p.baseURL, d, now)
-				p.prev[d] = u
-				if u.retry > 0 {
-					p.held[d] = now.Add(u.retry)
-				}
-				if u.Err == "" {
-					p.good[d] = u
-				}
+			c := state[d]
+			if c == nil {
+				c = &check{}
+				state[d] = c
 			}
-			if g, ok := p.good[d]; ok && u.Err != "" { // an old figure beats an error
-				u = g
+			// another window asked a moment ago, or the server asked everyone to wait
+			if now.Before(c.Held) || (!c.Checked.IsZero() && now.Sub(c.Checked) < gap) {
+				out = append(out, c.show(d))
+				continue
 			}
-			out = append(out, u)
+			u := Fetch(ctx, p.client, p.baseURL, d, now)
+			c.Checked, c.Err = now, u.Err
+			if u.retry > 0 {
+				c.Held = now.Add(u.retry)
+			}
+			if u.Err == "" {
+				u.At = now
+				c.Good = &u
+			}
+			out = append(out, c.show(d))
 		}
+		p.save(state)
 	}
 	p.mu.Lock()
 	p.latest = out
 	p.mu.Unlock()
+}
+
+// show is the figures to put on the screen: the last good ones beat an error.
+func (c *check) show(dir string) Usage {
+	if c.Good != nil {
+		return *c.Good
+	}
+	return Usage{Account: AccountName(dir), Err: c.Err}
+}
+
+// load is the state of every account: this window's, with what other windows found later.
+func (p *Poller) load() map[string]*check {
+	state := map[string]*check{}
+	for d, c := range p.mem {
+		state[d] = c
+	}
+	if p.shared == "" {
+		return state
+	}
+	var file map[string]*check
+	if b, err := os.ReadFile(p.shared); err == nil && json.Unmarshal(b, &file) == nil {
+		for d, c := range file {
+			if mine := state[d]; c != nil && (mine == nil || c.Checked.After(mine.Checked)) {
+				state[d] = c
+			}
+		}
+	}
+	return state
+}
+
+// save keeps the state for the next refresh and, through a rename, for the other windows. A file
+// that cannot be written only means the windows ask on their own.
+func (p *Poller) save(state map[string]*check) {
+	p.mem = state
+	if p.shared == "" {
+		return
+	}
+	b, err := json.Marshal(state)
+	if err != nil || os.MkdirAll(filepath.Dir(p.shared), 0o700) != nil {
+		return
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(p.shared), ".limits-*.tmp")
+	if err != nil {
+		return
+	}
+	_, werr := tmp.Write(b)
+	if cerr := tmp.Close(); werr != nil || cerr != nil || os.Rename(tmp.Name(), p.shared) != nil {
+		os.Remove(tmp.Name())
+	}
 }

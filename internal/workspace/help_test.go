@@ -14,7 +14,7 @@ func TestHelpListsEveryBindingAndMeaning(t *testing.T) {
 			t.Errorf("help lacks %q / %q", b.Keys, b.Desc)
 		}
 	}
-	for _, want := range []string{"waiting", "working", "idle", "done", "other terminal", "just active", "5h", "7h", "~/.config/nakama", "--offline", "Shift+drag"} {
+	for _, want := range []string{"waiting", "working", "idle", "done", "other terminal", "just active", "5h", "7d", "~/.config/nakama", "--offline", "Shift+drag"} {
 		if !strings.Contains(all, want) {
 			t.Errorf("help lacks %q", want)
 		}

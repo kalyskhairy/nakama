@@ -45,7 +45,7 @@ func TestStatusLineShowsWaitingCount(t *testing.T) {
 func TestStatusLineShowsLimits(t *testing.T) {
 	ok := Summary{Limits: []LimitView{{Account: "personal", FivePct: 78, SevenPct: 39, FiveReset: "02:00"}}}
 	got := StatusLine("", ok, 160)
-	for _, want := range []string{"5h 78%", "7h 39%"} {
+	for _, want := range []string{"5h 78%", "7d 39%"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in %q", want, got)
 		}
@@ -93,7 +93,7 @@ func TestLimitsSurviveTwoAccountsWhenSpaceIsTight(t *testing.T) {
 		{Account: "personal", FivePct: 10, SevenPct: 20},
 		{Account: "work", FivePct: 30, SevenPct: 40},
 	}}
-	// tabs (19) + both 5h figures fit, the 7h figures do not: tokens must not win over limits
+	// tabs (19) + both 5h figures fit, the 7d figures do not: tokens must not win over limits
 	got := StatusLine("", both, 36)
 	if !strings.Contains(got, "personal 5h 10%") || !strings.Contains(got, "work 5h 30%") {
 		t.Errorf("5h limits of both accounts must come before tokens: %q", got)
@@ -111,7 +111,7 @@ func TestLimitsSurviveTwoAccountsWhenSpaceIsTight(t *testing.T) {
 func TestSevenDayFigureIsDroppedBeforeFiveDay(t *testing.T) {
 	sum := Summary{Limits: []LimitView{{Account: "personal", FivePct: 10, SevenPct: 20}}}
 	tight := StatusLine("", sum, 12) // room for the 5h figure only
-	if !strings.Contains(tight, "5h 10%") || strings.Contains(tight, "7h") {
+	if !strings.Contains(tight, "5h 10%") || strings.Contains(tight, "7d") {
 		t.Errorf("%q", tight)
 	}
 }
@@ -126,5 +126,13 @@ func TestLongMessageIsTruncatedNotDropped(t *testing.T) {
 	got = StatusLine(msg, Summary{}, 45)
 	if !strings.Contains(got, "could not") || ansi.StringWidth(got) != 45 {
 		t.Fatalf("width %d: %q", ansi.StringWidth(got), got)
+	}
+}
+
+func TestOldFiguresAreMarked(t *testing.T) {
+	sum := Summary{Limits: []LimitView{{Account: "personal", FivePct: 40, SevenPct: 12, Stale: true}}}
+	got := StatusLine("", sum, 80)
+	if !strings.Contains(got, "5h ~40%") || !strings.Contains(got, "7d ~12%") {
+		t.Fatalf("%q", got)
 	}
 }

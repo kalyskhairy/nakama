@@ -202,6 +202,7 @@ func main() {
 	// plan limits: the poller itself allows one request a minute per account
 	home, _ := os.UserHomeDir()
 	poller := limits.NewPoller(&http.Client{Timeout: 10 * time.Second}, "https://api.anthropic.com", limits.Accounts(home), *offline)
+	poller.Share(filepath.Join(filepath.Dir(prefs.DefaultPath()), "limits.json")) // every nakama window asks once between them
 	safeGo(fatal, func() {
 		for {
 			poller.Refresh(context.Background(), time.Now())

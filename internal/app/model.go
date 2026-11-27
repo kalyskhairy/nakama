@@ -30,6 +30,7 @@ const (
 	msgTTL      = 3 * time.Second
 	confirmTTL  = 5 * time.Second
 	dblClick    = 400 * time.Millisecond
+	staleAfter  = 3 * time.Minute // plan limits older than this are from an earlier check: a later one failed
 )
 
 // SpawnReq says what to start: a new session in Dir, or ResumeID resumed in Dir. ConfigDir is the
@@ -416,7 +417,7 @@ func (m *Model) Summary(now time.Time) ui.Summary {
 		sum.TokensToday += in.TokensToday
 	}
 	for _, l := range m.limits {
-		v := ui.LimitView{Account: l.Account, FivePct: -1, SevenPct: -1, Err: l.Err}
+		v := ui.LimitView{Account: l.Account, FivePct: -1, SevenPct: -1, Err: l.Err, Stale: !l.At.IsZero() && now.Sub(l.At) > staleAfter}
 		if l.Err == "" {
 			v.FivePct, v.SevenPct = int(l.FiveHour.Pct+0.5), int(l.SevenDay.Pct+0.5)
 			v.FiveReset, v.SevenReset = resetText(l.FiveHour.ResetsAt, now), resetText(l.SevenDay.ResetsAt, now)

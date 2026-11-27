@@ -23,6 +23,7 @@ type LimitView struct {
 	FivePct, SevenPct     int // -1 = unknown
 	FiveReset, SevenReset string
 	Err                   string
+	Stale                 bool // the figures are from an earlier check
 }
 
 type Summary struct {
@@ -71,6 +72,14 @@ func Tokens(n int) string {
 	return fmt.Sprintf("%d tok", n)
 }
 
+// old marks a figure from an earlier check.
+func old(l LimitView) string {
+	if l.Stale {
+		return "~"
+	}
+	return ""
+}
+
 // limitFive is the first figure of an account (or its error); limitSeven the second, dropped first.
 func limitFive(l LimitView, named bool) string {
 	name := ""
@@ -80,7 +89,7 @@ func limitFive(l LimitView, named bool) string {
 	if l.Err != "" {
 		return name + l.Err
 	}
-	five := fmt.Sprintf("%s5h %d%%", name, l.FivePct)
+	five := fmt.Sprintf("%s5h %s%d%%", name, old(l), l.FivePct)
 	if l.FiveReset != "" {
 		five += " (" + l.FiveReset + ")"
 	}
@@ -91,7 +100,7 @@ func limitSeven(l LimitView) string {
 	if l.Err != "" {
 		return ""
 	}
-	return fmt.Sprintf("7h %d%%", l.SevenPct)
+	return fmt.Sprintf("7d %s%d%%", old(l), l.SevenPct)
 }
 
 // StatusLine is the always-visible bottom row. The waiting count comes first and is the last

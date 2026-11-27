@@ -86,7 +86,7 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
 
 - nakama **reads** `~/.claude*`: session transcripts and process status. It only **writes** `~/.config/nakama`.
 - To show plan limits it reads Claude Code's OAuth token and uses it **only** for one request to
-  `https://api.anthropic.com/api/oauth/usage` (at most once a minute per account). The token is not
+  `https://api.anthropic.com/api/oauth/usage` (at most once a minute per account, shared by every nakama window through `~/.config/nakama/limits.json`, which holds only the percentages). The token is not
   stored, shown or logged. This endpoint is undocumented; `--offline` turns it off.
 - It runs claude with `CLAUDE_CODE_FORCE_SYNC_OUTPUT=1` so the chat does not flicker.
 - The transcript format, the status files and that variable are not official; a new Claude Code

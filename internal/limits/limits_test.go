@@ -241,3 +241,62 @@ func TestARateLimitBeforeAnyFigureSaysSo(t *testing.T) {
 		t.Fatalf("%+v", l[0])
 	}
 }
+
+func TestWindowsShareOneCheck(t *testing.T) {
+	var hits atomic.Int32
+	srv := server(t, 200, 0, &hits)
+	dirs := []string{account(t, t.TempDir(), ".claude", future)}
+	shared := filepath.Join(t.TempDir(), "limits.json")
+	a := NewPoller(srv.Client(), srv.URL, dirs, false)
+	b := NewPoller(srv.Client(), srv.URL, dirs, false)
+	a.Share(shared)
+	b.Share(shared)
+	a.Refresh(context.Background(), t0)
+	b.Refresh(context.Background(), t0.Add(20*time.Second))
+	if hits.Load() != 1 {
+		t.Fatalf("two windows asked %d times within a minute", hits.Load())
+	}
+	if l := b.Latest(); len(l) != 1 || l[0].FiveHour.Pct != 52 || !l[0].At.Equal(t0) {
+		t.Fatalf("the second window shows the first one's figures: %+v", l)
+	}
+	b.Refresh(context.Background(), t0.Add(81*time.Second))
+	if hits.Load() != 2 {
+		t.Fatalf("a minute later one of them asks again: %d", hits.Load())
+	}
+	if st, err := os.Stat(shared); err != nil || st.Mode().Perm() != 0o600 {
+		t.Fatalf("%v %v", st, err)
+	}
+}
+
+func TestAWaitTheServerAskedForHoldsForEveryWindow(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		w.Header().Set("Retry-After", "300")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	t.Cleanup(srv.Close)
+	dirs := []string{account(t, t.TempDir(), ".claude", future)}
+	shared := filepath.Join(t.TempDir(), "limits.json")
+	a := NewPoller(srv.Client(), srv.URL, dirs, false)
+	b := NewPoller(srv.Client(), srv.URL, dirs, false)
+	a.Share(shared)
+	b.Share(shared)
+	a.Refresh(context.Background(), t0)
+	b.Refresh(context.Background(), t0.Add(2*time.Minute))
+	if hits.Load() != 1 || b.Latest()[0].Err != "rate limited, retrying later" {
+		t.Fatalf("hits %d, %+v", hits.Load(), b.Latest())
+	}
+}
+
+func TestABrokenSharedFileIsNoReasonToStop(t *testing.T) {
+	srv := server(t, 200, 0, nil)
+	shared := filepath.Join(t.TempDir(), "limits.json")
+	os.WriteFile(shared, []byte("{broken"), 0o600)
+	p := NewPoller(srv.Client(), srv.URL, []string{account(t, t.TempDir(), ".claude", future)}, false)
+	p.Share(shared)
+	p.Refresh(context.Background(), t0)
+	if l := p.Latest(); l[0].FiveHour.Pct != 52 {
+		t.Fatalf("%+v", l)
+	}
+}

@@ -545,7 +545,7 @@ func TestFrameShowsLimits(t *testing.T) {
 	m := newModel(t, spawnCmd("sleep", "30"))
 	m.SetLimits([]limits.Usage{{Account: "personal", FiveHour: limits.Window{Pct: 78, ResetsAt: t0}, SevenDay: limits.Window{Pct: 39}}})
 	rows := plainRows(Frame(m, 120, 30, t0), 30)
-	if !strings.Contains(rows[29], "5h 78%") || !strings.Contains(rows[29], "7h 39%") {
+	if !strings.Contains(rows[29], "5h 78%") || !strings.Contains(rows[29], "7d 39%") {
 		t.Fatalf("%q", rows[29])
 	}
 	m.SetLimits([]limits.Usage{{Account: "personal", Err: "offline"}})
@@ -634,5 +634,14 @@ func TestAKeyCyclesTheAccountFilter(t *testing.T) {
 		if got := ids(); got != want {
 			t.Fatalf("filter %q: tree %q want %q", m.account, got, want)
 		}
+	}
+}
+
+func TestFiguresOlderThanAFewMinutesShowAsOld(t *testing.T) {
+	m := newModel(t, spawnCmd("sleep", "30"))
+	m.SetLimits([]limits.Usage{{Account: "personal", At: t0.Add(-10 * time.Minute)}, {Account: "work", At: t0.Add(-time.Minute)}})
+	s := m.Summary(t0)
+	if !s.Limits[0].Stale || s.Limits[1].Stale {
+		t.Fatalf("%+v", s.Limits)
 	}
 }
