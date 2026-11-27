@@ -97,7 +97,7 @@ Then run `nakama` from any folder. The first time, pick the folders you want to 
 
 Until you make your own, nakama uses a **demo theme** (the picture above): an original guild house
 and crew, generated with an AI image model for this project and cleaned up by hand. It is written to
-`~/.config/nakama/themes/nakama-demo/`. To use your own, make it in `~/.config/nakama/themes/default/`
+`~/.config/nakama/themes/demo/`. To use your own, make it in `~/.config/nakama/themes/default/`
 (or another name, used with `--theme`):
 
 ```
