@@ -100,3 +100,36 @@ func TestNoCorridorNoStrollers(t *testing.T) {
 		t.Fatal("a theme without a corridor stays as it was")
 	}
 }
+
+func TestTheOffDutyCrewUsesEveryLaneAndCrossesBetweenThem(t *testing.T) {
+	th := corridorTheme()
+	th.CharHeight, th.CorridorLanes = 0.1, 3
+	w := NewWorld(th)
+	gap := laneGap * th.CharHeight
+	lanes := map[float64]bool{}
+	crossed := map[string]bool{}
+	last := map[string]float64{}
+	for i := 0; i < 4*600; i++ {
+		w.Update(nil, t0.Add(time.Duration(i)*250*time.Millisecond))
+		for name, p := range idlers(w) {
+			if p.P.Y < 0.5-gap-1e-9 || p.P.Y > 0.5+gap+1e-9 {
+				t.Fatalf("%s left the corridor: %v", name, p.P)
+			}
+			if p.Anim == Walk {
+				continue
+			}
+			y := math.Round((p.P.Y-0.5)/gap*1000) / 1000
+			if y != -1 && y != 0 && y != 1 {
+				t.Fatalf("%s stands between lanes: %v", name, p.P)
+			}
+			lanes[y] = true
+			if l, ok := last[name]; ok && l != y {
+				crossed[name] = true
+			}
+			last[name] = y
+		}
+	}
+	if len(lanes) != 3 || len(crossed) == 0 {
+		t.Fatalf("lanes %v, crossed %v", lanes, crossed)
+	}
+}

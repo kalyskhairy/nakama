@@ -70,6 +70,7 @@ type body struct {
 	facing  int
 	phase   float64
 	wait    float64 // seconds before it walks in
+	lane    int     // corridor lane of a stroller
 }
 
 type World struct {

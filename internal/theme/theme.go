@@ -35,6 +35,7 @@ type Theme struct {
 	SessionCharacters []string
 	Heights           map[string]float64 // character name -> height relative to CharHeight; absent = 1
 	Corridor          []string           // nodes of the passage where the characters not in use hang about
+	CorridorLanes     int                // parallel lanes they walk in, side by side (1 = down the middle)
 	Nodes             map[string]Point
 	Edges             [][2]string
 	Entrance          string
@@ -55,6 +56,7 @@ type file struct {
 	SessionCharacters []string                          `json:"sessionCharacters"`
 	Heights           map[string]float64                `json:"heights"`
 	Corridor          []string                          `json:"corridor"`
+	CorridorLanes     int                               `json:"corridorLanes"`
 	Stations          []struct {
 		ID, Kind, Room, Node string
 		X, Y                 float64
@@ -130,7 +132,13 @@ func Load(dir string) (*Theme, error) {
 	if len(f.Corridor) == 1 {
 		return nil, fmt.Errorf("corridor needs at least two nodes")
 	}
-	t.Corridor = f.Corridor
+	t.Corridor, t.CorridorLanes = f.Corridor, f.CorridorLanes
+	switch {
+	case f.CorridorLanes == 0:
+		t.CorridorLanes = 1
+	case f.CorridorLanes < 1 || f.CorridorLanes > 5:
+		return nil, fmt.Errorf("corridorLanes must be 1 to 5")
+	}
 	adj := map[string][]string{}
 	for _, e := range f.Edges {
 		if _, ok := t.Nodes[e[0]]; !ok {

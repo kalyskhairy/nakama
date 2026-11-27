@@ -138,6 +138,7 @@ nakama theme import-sheet --sheet captain.png --theme ~/.config/nakama/themes/de
 | `sessionCharacters` | optional: one character per session; the first is always taken first |
 | `heights` | optional: per-character height (1 = normal) |
 | `corridor` | optional: corridor nodes (at least 2, in order); the `sessionCharacters` no session uses stroll there |
+| `corridorLanes` | optional: how many lanes they walk in, side by side (1 to 5, default 1) |
 | `nodes`, `edges`, `entrance` | the paths characters walk; every node must be connected |
 | `stations` | `work` or `rest` places; `for` lists the characters or agent types that prefer them |
 

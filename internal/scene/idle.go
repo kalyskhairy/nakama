@@ -16,18 +16,36 @@ const (
 	strollPace   = 0.5 // of the speed of somebody with work to do
 	elbowRoom    = 0.05
 	idlePrefix   = "idle:"
+	laneGap      = 0.4  // between two lanes, in character heights
+	laneChange   = 0.03 // how far along the corridor a step to another lane takes, in background widths
 )
 
 func pause() float64 { return minPause + rand.Float64()*(maxPause-minPause) }
 
-// spot is a random place on the corridor, away from where the others stand or head if it can be.
-func (w *World) spot(me string) theme.Point {
+// lanePoint is the point a fraction f along corridor segment i, moved sideways into a lane.
+// Lanes are numbered 0.. across the corridor, the middle one on the line itself.
+func (w *World) lanePoint(i int, f float64, lane int) theme.Point {
+	a, b := w.th.Nodes[w.th.Corridor[i]], w.th.Nodes[w.th.Corridor[i+1]]
+	p := theme.Point{X: a.X + (b.X-a.X)*f, Y: a.Y + (b.Y-a.Y)*f}
+	dx, dy := b.X-a.X, (b.Y-a.Y)*w.aspect // in background widths, so the sides are square
+	l := math.Hypot(dx, dy)
+	if l == 0 {
+		return p
+	}
+	// sideways by a share of the character height (a fraction of the background height)
+	k := float64(lane) - float64(w.th.CorridorLanes-1)/2
+	off := k * laneGap * w.th.CharHeight
+	return theme.Point{X: p.X - dy/l*off*w.aspect, Y: p.Y + dx/l*off}
+}
+
+// spot is a random place on the corridor, in a random lane, away from where the others stand or
+// head if it can be.
+func (w *World) spot(me string) (theme.Point, int) {
 	var p theme.Point
+	lane := 0
 	for try := 0; try < 8; try++ {
-		i := rand.IntN(len(w.th.Corridor) - 1)
-		a, b := w.th.Nodes[w.th.Corridor[i]], w.th.Nodes[w.th.Corridor[i+1]]
-		f := rand.Float64()
-		p = theme.Point{X: a.X + (b.X-a.X)*f, Y: a.Y + (b.Y-a.Y)*f}
+		lane = rand.IntN(max(w.th.CorridorLanes, 1))
+		p = w.lanePoint(rand.IntN(len(w.th.Corridor)-1), rand.Float64(), lane)
 		clear := true
 		for name, o := range w.idle {
 			at := o.pos
@@ -40,7 +58,45 @@ func (w *World) spot(me string) theme.Point {
 			break
 		}
 	}
-	return p
+	return p, lane
+}
+
+// stroll path is the way to a spot: straight along the lane, after a short step across when the spot
+// is in another lane.
+func (w *World) strollPath(b *body, to theme.Point, lane int) []theme.Point {
+	if lane == b.lane {
+		return []theme.Point{to}
+	}
+	if w.dist(b.pos, to) <= laneChange*2 {
+		return []theme.Point{to}
+	}
+	seg := w.segmentOf(b.pos)
+	a, c := w.th.Nodes[w.th.Corridor[seg]], w.th.Nodes[w.th.Corridor[seg+1]]
+	dx, dy := c.X-a.X, (c.Y-a.Y)*w.aspect // in background widths, so the sides are square
+	l := math.Hypot(dx, dy)
+	if l == 0 {
+		return []theme.Point{to}
+	}
+	ux, uy := dx/l, dy/l
+	step := laneChange // forward along the corridor, toward the spot
+	if (to.X-b.pos.X)*ux+(to.Y-b.pos.Y)*w.aspect*uy < 0 {
+		step = -step
+	}
+	off := float64(lane-b.lane) * laneGap * w.th.CharHeight // and across into the new lane
+	across := theme.Point{X: b.pos.X + ux*step - uy*off*w.aspect, Y: b.pos.Y + uy*step/w.aspect + ux*off}
+	return []theme.Point{across, to}
+}
+
+// segmentOf is the corridor segment nearest to a point.
+func (w *World) segmentOf(p theme.Point) int {
+	best, bestD := 0, math.Inf(1)
+	for i := 0; i+1 < len(w.th.Corridor); i++ {
+		a, b := w.th.Nodes[w.th.Corridor[i]], w.th.Nodes[w.th.Corridor[i+1]]
+		if d := w.dist(p, a) + w.dist(p, b) - w.dist(a, b); d < bestD {
+			best, bestD = i, d
+		}
+	}
+	return best
 }
 
 // muster keeps one stroller for every character that no lead wears. left holds where the characters
@@ -54,11 +110,11 @@ func (w *World) muster(worn map[string]bool, left map[string]theme.Point) {
 		case worn[name]:
 			delete(w.idle, name)
 		case w.idle[name] == nil:
+			to, lane := w.spot(name)
 			if at, ok := left[name]; ok {
-				to := w.spot(name)
-				w.idle[name] = &body{pos: at, path: w.route(at, theme.Station{Point: to, Node: w.nearestNode(to)})}
+				w.idle[name] = &body{pos: at, lane: lane, path: w.route(at, theme.Station{Point: to, Node: w.nearestNode(to)})}
 			} else {
-				w.idle[name] = &body{pos: w.spot(name), wait: rand.Float64() * maxPause}
+				w.idle[name] = &body{pos: to, lane: lane, wait: rand.Float64() * maxPause}
 			}
 		}
 	}
@@ -81,7 +137,8 @@ func (w *World) stroll(dt float64) {
 		if len(b.path) == 0 {
 			b.wait = math.Max(b.wait-dt, 0)
 			if b.wait == 0 && walking < maxStrolling {
-				b.path = []theme.Point{w.spot(name)} // along the corridor, which is straight between its nodes
+				to, lane := w.spot(name)
+				b.path, b.lane = w.strollPath(b, to, lane), lane // along the corridor, straight between its nodes
 				walking++
 			}
 			continue

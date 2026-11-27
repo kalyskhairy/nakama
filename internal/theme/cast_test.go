@@ -35,3 +35,18 @@ func TestCorridorNeedsExistingNodes(t *testing.T) {
 		}
 	}
 }
+
+func TestCorridorLanes(t *testing.T) {
+	th, err := Load(write(t, func(m map[string]any) { m["corridor"] = []string{"a", "b"}; m["corridorLanes"] = 3 }))
+	if err != nil || th.CorridorLanes != 3 {
+		t.Fatalf("%v %d", err, th.CorridorLanes)
+	}
+	if th, _ := Load(write(t, func(m map[string]any) {})); th.CorridorLanes != 1 {
+		t.Fatalf("default %d", th.CorridorLanes)
+	}
+	for _, bad := range []int{-1, 10} {
+		if _, err := Load(write(t, func(m map[string]any) { m["corridorLanes"] = bad })); err == nil {
+			t.Errorf("%d accepted", bad)
+		}
+	}
+}
