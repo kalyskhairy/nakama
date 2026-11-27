@@ -2,6 +2,9 @@ package workspace
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -99,7 +102,8 @@ type NewPicker struct {
 	accounts       []string
 	defaultAccount func(cwd string) string
 	cursor         int
-	acct           string // chosen with Tab; empty means the default for the folder
+	acct           string   // chosen with Tab; empty means the default for the folder
+	choices        []string // folders the last Tab could not choose between
 	finished, ok   bool
 }
 
@@ -147,23 +151,85 @@ func (p *NewPicker) account(dir string) string {
 	return "personal"
 }
 
+func (p *NewPicker) nextAccount() {
+	cur := p.account(p.dir())
+	for i, a := range p.accounts {
+		if a == cur {
+			p.acct = p.accounts[(i+1)%len(p.accounts)]
+			return
+		}
+	}
+	if len(p.accounts) > 0 {
+		p.acct = p.accounts[0]
+	}
+}
+
+// complete lengthens a typed path the way a shell does, with folders only: one match is filled in
+// with its "/", several are filled in as far as they agree, and a second Tab lists them.
+func (p *NewPicker) complete() {
+	if p.Query == "~" {
+		p.Query = "~/"
+		return
+	}
+	cut := strings.LastIndex(p.Query, "/") + 1
+	dir, prefix := p.Query[:cut], p.Query[cut:]
+	base := dir
+	if strings.HasPrefix(dir, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return
+		}
+		base = filepath.Join(home, dir[2:])
+	}
+	entries, err := os.ReadDir(base)
+	if dir == "" || err != nil {
+		return
+	}
+	var names []string
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, prefix) || (strings.HasPrefix(name, ".") && !strings.HasPrefix(prefix, ".")) {
+			continue
+		}
+		if st, err := os.Stat(filepath.Join(base, name)); err == nil && st.IsDir() { // follows links
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	if len(names) == 0 {
+		return
+	}
+	common := names[0]
+	for _, n := range names[1:] {
+		for !strings.HasPrefix(n, common) {
+			common = common[:len(common)-1]
+		}
+	}
+	switch {
+	case len(names) == 1:
+		p.Query = dir + names[0] + "/"
+	case len(common) > len(prefix):
+		p.Query = dir + common
+	default:
+		p.choices = names
+	}
+}
+
 func (p *NewPicker) Key(k string) bool {
+	p.choices = nil
 	switch k {
 	case "up":
 		p.cursor = max(p.cursor-1, 0)
 	case "down":
 		p.cursor = min(p.cursor+1, max(len(p.visible())-1, 0))
 	case "tab":
-		cur := p.account(p.dir())
-		for i, a := range p.accounts {
-			if a == cur {
-				p.acct = p.accounts[(i+1)%len(p.accounts)]
-				return false
-			}
+		if p.isPath() {
+			p.complete()
+		} else {
+			p.nextAccount()
 		}
-		if len(p.accounts) > 0 {
-			p.acct = p.accounts[0]
-		}
+	case "shift-tab":
+		p.nextAccount()
 	case "backspace":
 		if _, n := utf8.DecodeLastRuneInString(p.Query); n > 0 {
 			p.Query = p.Query[:len(p.Query)-n]
@@ -194,9 +260,18 @@ func (p *NewPicker) Result() (dir, account string, ok bool) {
 }
 
 func (p *NewPicker) Lines(w, h int) []string {
-	out := []string{"New session", "Type to filter folders, or write a path (/ or ~) · Tab account · Enter start · esc cancel", "> " + p.Query,
-		"Account: " + p.account(p.dir()), ""}
+	hint := "Type to filter folders, or write a path (/ or ~) · Tab account · Enter start · esc cancel"
+	if p.isPath() {
+		hint = "Tab completes the path · Shift+Tab account · Enter start · esc cancel"
+	}
+	out := []string{"New session", hint, "> " + p.Query, "Account: " + p.account(p.dir()), ""}
 	vis := max(h-len(out), 1)
+	if len(p.choices) > 0 {
+		for _, c := range p.choices[:min(len(p.choices), vis)] {
+			out = append(out, "  "+c+"/")
+		}
+		return out
+	}
 	v := p.visible()
 	off := ScrollOffset(p.cursor, vis)
 	for i := off; i < len(v) && i < off+vis; i++ {
