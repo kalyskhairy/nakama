@@ -1,0 +1,280 @@
+{
+  "name": "demo",
+  "background": {
+    "file": "background.png"
+  },
+  "charHeight": 0.115,
+  "characters": {
+    "captain": "sprites/captain",
+    "scholar": "sprites/scholar",
+    "cook": "sprites/cook",
+    "smith": "sprites/smith",
+    "gardener": "sprites/gardener",
+    "painter": "sprites/painter"
+  },
+  "agentTypes": {
+    "session": "captain",
+    "default": "captain"
+  },
+  "sessionCharacters": [
+    "captain",
+    "scholar",
+    "cook",
+    "smith",
+    "gardener",
+    "painter"
+  ],
+  "corridor": [
+    "entrance",
+    "end"
+  ],
+  "corridorLanes": 3,
+  "nodes": {
+    "entrance": {
+      "x": 0.0162,
+      "y": 0.5127
+    },
+    "end": {
+      "x": 0.9845,
+      "y": 0.5127
+    },
+    "cLib": {
+      "x": 0.1781,
+      "y": 0.5127
+    },
+    "cWork": {
+      "x": 0.2429,
+      "y": 0.5127
+    },
+    "cOff": {
+      "x": 0.5104,
+      "y": 0.5127
+    },
+    "cBed": {
+      "x": 0.5712,
+      "y": 0.5127
+    },
+    "cKit": {
+      "x": 0.8374,
+      "y": 0.5127
+    },
+    "dLib": {
+      "x": 0.1781,
+      "y": 0.3924
+    },
+    "dOff": {
+      "x": 0.5104,
+      "y": 0.3924
+    },
+    "dKit": {
+      "x": 0.8374,
+      "y": 0.3924
+    },
+    "dWork": {
+      "x": 0.2429,
+      "y": 0.606
+    },
+    "dBed": {
+      "x": 0.5712,
+      "y": 0.606
+    },
+    "dGar": {
+      "x": 0.8374,
+      "y": 0.606
+    }
+  },
+  "edges": [
+    [
+      "entrance",
+      "cLib"
+    ],
+    [
+      "cLib",
+      "cWork"
+    ],
+    [
+      "cWork",
+      "cOff"
+    ],
+    [
+      "cOff",
+      "cBed"
+    ],
+    [
+      "cBed",
+      "cKit"
+    ],
+    [
+      "cKit",
+      "end"
+    ],
+    [
+      "cLib",
+      "dLib"
+    ],
+    [
+      "cWork",
+      "dWork"
+    ],
+    [
+      "cOff",
+      "dOff"
+    ],
+    [
+      "cBed",
+      "dBed"
+    ],
+    [
+      "cKit",
+      "dKit"
+    ],
+    [
+      "cKit",
+      "dGar"
+    ]
+  ],
+  "entrance": "entrance",
+  "stations": [
+    {
+      "id": "library",
+      "x": 0.2137,
+      "y": 0.2896,
+      "kind": "work",
+      "room": "library",
+      "node": "dLib",
+      "for": [
+        "scholar",
+        "Explore"
+      ]
+    },
+    {
+      "id": "desk-mid",
+      "x": 0.5104,
+      "y": 0.3054,
+      "kind": "work",
+      "room": "office",
+      "node": "dOff",
+      "for": [
+        "captain",
+        "Plan"
+      ]
+    },
+    {
+      "id": "desk-left",
+      "x": 0.4016,
+      "y": 0.3054,
+      "kind": "work",
+      "room": "office",
+      "node": "dOff"
+    },
+    {
+      "id": "desk-right",
+      "x": 0.6218,
+      "y": 0.3054,
+      "kind": "work",
+      "room": "office",
+      "node": "dOff"
+    },
+    {
+      "id": "stove",
+      "x": 0.7416,
+      "y": 0.2025,
+      "kind": "work",
+      "room": "kitchen",
+      "node": "dKit",
+      "for": [
+        "cook"
+      ]
+    },
+    {
+      "id": "anvil",
+      "x": 0.2105,
+      "y": 0.9304,
+      "kind": "work",
+      "room": "workshop",
+      "node": "dWork",
+      "for": [
+        "smith",
+        "general-purpose"
+      ]
+    },
+    {
+      "id": "workbench",
+      "x": 0.1166,
+      "y": 0.8275,
+      "kind": "work",
+      "room": "workshop",
+      "node": "dWork"
+    },
+    {
+      "id": "flowers",
+      "x": 0.7416,
+      "y": 0.7563,
+      "kind": "work",
+      "room": "garden",
+      "node": "dGar",
+      "for": [
+        "gardener"
+      ]
+    },
+    {
+      "id": "easel",
+      "x": 0.9067,
+      "y": 0.788,
+      "kind": "work",
+      "room": "garden",
+      "node": "dGar",
+      "for": [
+        "painter"
+      ]
+    },
+    {
+      "id": "bed-1",
+      "x": 0.3724,
+      "y": 0.7484,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "dBed"
+    },
+    {
+      "id": "bed-2",
+      "x": 0.4909,
+      "y": 0.7484,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "dBed"
+    },
+    {
+      "id": "bed-3",
+      "x": 0.6425,
+      "y": 0.7484,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "dBed"
+    },
+    {
+      "id": "bed-4",
+      "x": 0.3724,
+      "y": 0.9335,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "dBed"
+    },
+    {
+      "id": "bed-5",
+      "x": 0.4909,
+      "y": 0.9335,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "dBed"
+    },
+    {
+      "id": "bed-6",
+      "x": 0.6425,
+      "y": 0.9335,
+      "kind": "rest",
+      "room": "bedroom",
+      "node": "dBed"
+    }
+  ]
+}

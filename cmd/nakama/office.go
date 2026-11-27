@@ -42,7 +42,7 @@ func loadOffice(o officeOpts, hasSixel func() bool) *app.OfficeConfig {
 	}
 	dir := filepath.Join(o.themesDir, o.themeName)
 	if _, err := os.Stat(dir); os.IsNotExist(err) && o.themeName == "default" { // no theme of their own yet
-		dir = filepath.Join(o.themesDir, "demo")
+		dir = filepath.Join(o.themesDir, "nakama-demo") // a new name, so an older demo on disk is not kept
 		if err := demo.Write(dir); err != nil {
 			return fail("demo theme: %v", err)
 		}

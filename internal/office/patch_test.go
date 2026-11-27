@@ -36,3 +36,32 @@ func TestPartIsEncodedInTheSharedColours(t *testing.T) {
 		t.Fatalf("%d bytes %v", len(out), err)
 	}
 }
+
+func TestASmallColourOfACharacterKeepsItsPlaceInThePalette(t *testing.T) {
+	r := testRenderer(t)
+	bg := image.NewNRGBA(image.Rect(0, 0, 200, 100)) // hundreds of browns that would take every slot
+	for y := 0; y < 100; y++ {
+		for x := 0; x < 200; x++ {
+			bg.SetNRGBA(x, y, color.NRGBA{uint8(100 + x/2), uint8(50 + y), uint8(20 + (x+y)%40), 255})
+		}
+	}
+	r.th.Background = bg
+	lavender := color.NRGBA{180, 150, 230, 255}
+	for _, f := range r.sheets["d"].Rows[0] {
+		f.SetNRGBA(f.Bounds().Dx()/2, 2, lavender)
+		f.SetNRGBA(f.Bounds().Dx()/2+1, 2, lavender)
+	}
+	pal, err := r.Palette()
+	if err != nil {
+		t.Fatal(err)
+	}
+	best := 1 << 30
+	for _, c := range pal {
+		k := color.NRGBAModel.Convert(c).(color.NRGBA)
+		d := (int(k.R)-180)*(int(k.R)-180) + (int(k.G)-150)*(int(k.G)-150) + (int(k.B)-230)*(int(k.B)-230)
+		best = min(best, d)
+	}
+	if best > 20*20 || len(pal) > 255 {
+		t.Fatalf("nearest colour is %d away; %d colours", best, len(pal))
+	}
+}
