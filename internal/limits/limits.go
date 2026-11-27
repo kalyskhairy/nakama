@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,7 +26,8 @@ type Window struct {
 type Usage struct {
 	Account            string
 	FiveHour, SevenDay Window
-	Err                string // empty on success
+	Err                string        // empty on success
+	retry              time.Duration // how long the server asked us to wait, after a refusal for asking too often
 }
 
 const (
@@ -140,6 +142,9 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, dir string, now ti
 	}
 	defer resp.Body.Close()
 	switch {
+	case resp.StatusCode == http.StatusTooManyRequests:
+		u.Err, u.retry = "rate limited, retrying later", retryAfter(resp.Header.Get("Retry-After"))
+		return u
 	case resp.StatusCode == http.StatusUnauthorized:
 		u.Err = "token rejected (HTTP 401)"
 		return u
@@ -161,6 +166,16 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, dir string, now ti
 	return u
 }
 
+// retryAfter is the wait a Retry-After header asks for in seconds, kept between one and thirty minutes;
+// five minutes when it says nothing usable.
+func retryAfter(h string) time.Duration {
+	s, err := strconv.Atoi(strings.TrimSpace(h))
+	if err != nil || s <= 0 {
+		return 5 * time.Minute
+	}
+	return min(max(time.Duration(s)*time.Second, time.Minute), 30*time.Minute)
+}
+
 // Poller refreshes all accounts, at most once a minute (or every 10 s for a manual refresh).
 type Poller struct {
 	client  *http.Client
@@ -172,10 +187,15 @@ type Poller struct {
 	last   time.Time
 	mu     sync.Mutex // guards latest
 	latest []Usage
+
+	good map[string]Usage     // last success per account dir: shown while a later refresh fails
+	held map[string]time.Time // no request for this account dir before then
+	prev map[string]Usage     // last answer per account dir
 }
 
 func NewPoller(client *http.Client, baseURL string, dirs []string, offline bool) *Poller {
-	return &Poller{client: client, baseURL: baseURL, dirs: dirs, offline: offline}
+	return &Poller{client: client, baseURL: baseURL, dirs: dirs, offline: offline,
+		good: map[string]Usage{}, held: map[string]time.Time{}, prev: map[string]Usage{}}
 }
 
 func (p *Poller) Latest() []Usage {
@@ -201,7 +221,21 @@ func (p *Poller) refresh(ctx context.Context, now time.Time, gap time.Duration) 
 		}
 		p.last = now
 		for _, d := range p.dirs {
-			out = append(out, Fetch(ctx, p.client, p.baseURL, d, now))
+			u := p.prev[d]
+			if now.After(p.held[d]) || now.Equal(p.held[d]) {
+				u = Fetch(ctx, p.client, p.baseURL, d, now)
+				p.prev[d] = u
+				if u.retry > 0 {
+					p.held[d] = now.Add(u.retry)
+				}
+				if u.Err == "" {
+					p.good[d] = u
+				}
+			}
+			if g, ok := p.good[d]; ok && u.Err != "" { // an old figure beats an error
+				u = g
+			}
+			out = append(out, u)
 		}
 	}
 	p.mu.Lock()

@@ -92,7 +92,7 @@ func TestFetchExpiredTokenIsNotSent(t *testing.T) {
 
 func TestFetchHTTPErrors(t *testing.T) {
 	dir := account(t, t.TempDir(), ".claude", future)
-	for status, want := range map[int]string{401: "401", 429: "429", 500: "500"} {
+	for status, want := range map[int]string{401: "401", 429: "rate limited", 500: "500"} {
 		srv := server(t, status, 0, nil)
 		if u := Fetch(context.Background(), srv.Client(), srv.URL, dir, t0); !strings.Contains(u.Err, want) {
 			t.Errorf("status %d: %q", status, u.Err)
@@ -200,5 +200,44 @@ func TestTokenNeverAppearsInErrors(t *testing.T) {
 		if u.Err == "" || strings.Contains(u.Err, secret) {
 			t.Errorf("bad error string: %q", u.Err)
 		}
+	}
+}
+
+func TestARateLimitKeepsTheLastFiguresAndWaitsBeforeAskingAgain(t *testing.T) {
+	var hits atomic.Int32
+	limited := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		if limited {
+			w.Header().Set("Retry-After", "120")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Write([]byte(`{"five_hour":{"utilization":40},"seven_day":{"utilization":10}}`))
+	}))
+	t.Cleanup(srv.Close)
+	p := NewPoller(srv.Client(), srv.URL, []string{account(t, t.TempDir(), ".claude", future)}, false)
+	p.Refresh(context.Background(), t0)
+	limited = true
+	p.Refresh(context.Background(), t0.Add(61*time.Second))
+	if l := p.Latest(); l[0].Err != "" || l[0].FiveHour.Pct != 40 {
+		t.Fatalf("the last good figures must stay: %+v", l[0])
+	}
+	p.Refresh(context.Background(), t0.Add(122*time.Second)) // a minute later, but the server asked for two
+	if hits.Load() != 2 {
+		t.Fatalf("asked again too soon: %d requests", hits.Load())
+	}
+	p.Refresh(context.Background(), t0.Add(182*time.Second))
+	if hits.Load() != 3 {
+		t.Fatalf("never asked again: %d requests", hits.Load())
+	}
+}
+
+func TestARateLimitBeforeAnyFigureSaysSo(t *testing.T) {
+	srv := server(t, http.StatusTooManyRequests, 0, nil)
+	p := NewPoller(srv.Client(), srv.URL, []string{account(t, t.TempDir(), ".claude", future)}, false)
+	p.Refresh(context.Background(), t0)
+	if l := p.Latest(); l[0].Err != "rate limited, retrying later" {
+		t.Fatalf("%+v", l[0])
 	}
 }
