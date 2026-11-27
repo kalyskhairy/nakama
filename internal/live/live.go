@@ -14,6 +14,8 @@ import (
 type Proc struct {
 	PID                                     int
 	SessionID, Cwd, Name, Status, ConfigDir string
+
+	kind, job, parked string // a background job, and the job a session handed its work to
 }
 
 var isAlive = procAlive
@@ -43,11 +45,41 @@ func Read(configDirs []string) []Proc {
 				Cwd       string `json:"cwd"`
 				Name      string `json:"name"`
 				Status    string `json:"status"`
+				Kind      string `json:"kind"`
+				JobID     string `json:"jobId"`
+				Parked    string `json:"parkedJobId"`
 			}
 			if json.Unmarshal(b, &r) != nil || r.PID <= 0 || r.SessionID == "" || !isAlive(r.PID) {
 				continue
 			}
-			out = append(out, Proc{PID: r.PID, SessionID: r.SessionID, Cwd: r.Cwd, Name: r.Name, Status: r.Status, ConfigDir: dir})
+			out = append(out, Proc{PID: r.PID, SessionID: r.SessionID, Cwd: r.Cwd, Name: r.Name, Status: r.Status, ConfigDir: dir,
+				kind: r.Kind, job: r.JobID, parked: r.Parked})
+		}
+	}
+	return seatJobs(out)
+}
+
+// seatJobs folds a background job into the session that handed its work to it (parkedJobId names the
+// job): the conversation goes on under the job's session id and status, in the terminal of the
+// session that parked it. Seen as two, the job would look like a session in another terminal.
+func seatJobs(ps []Proc) []Proc {
+	jobs := map[string]Proc{}
+	for _, p := range ps {
+		if p.kind == "bg" && p.job != "" {
+			jobs[p.job] = p
+		}
+	}
+	taken := map[int]bool{}
+	for i, p := range ps {
+		if j, ok := jobs[p.parked]; ok && p.kind != "bg" {
+			ps[i].SessionID, ps[i].Status = j.SessionID, j.Status
+			taken[j.PID] = true
+		}
+	}
+	out := ps[:0]
+	for _, p := range ps {
+		if !taken[p.PID] || p.kind != "bg" {
+			out = append(out, p)
 		}
 	}
 	return out

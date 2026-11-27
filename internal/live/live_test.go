@@ -73,3 +73,24 @@ func TestProcAliveRealProcess(t *testing.T) {
 		t.Fatal("missing pid is alive")
 	}
 }
+
+func TestABackgroundJobBelongsToTheSessionThatParkedIt(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "10.json", `{"pid":10,"sessionId":"s-old","kind":"interactive","status":"idle","name":"mine","parkedJobId":"j1"}`)
+	write(t, dir, "20.json", `{"pid":20,"sessionId":"s-job","kind":"bg","jobId":"j1","status":"busy","name":"Some title"}`)
+	write(t, dir, "30.json", `{"pid":30,"sessionId":"s-other","kind":"bg","jobId":"j2","status":"busy"}`) // nobody parked it
+	fakeAlive(t, 10, 20, 30)
+	got := BySession(Read([]string{dir}))
+	if len(got) != 2 {
+		t.Fatalf("%+v", got)
+	}
+	if p := got["s-job"]; p.PID != 10 || p.Status != "busy" || p.Name != "mine" {
+		t.Fatalf("the job takes the seat of the session that parked it: %+v", p)
+	}
+	if _, ok := got["s-old"]; ok {
+		t.Fatal("the parked id no longer runs")
+	}
+	if got["s-other"].PID != 30 {
+		t.Fatalf("%+v", got)
+	}
+}
